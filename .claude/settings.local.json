@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(pnpm --version)",
+      "Bash(git --version)",
+      "Bash(npm install *)",
+      "Bash(mkdir -p \"C:/Users/jgsar/OneDrive/Escritorio/Banda/_safe\")",
+      "Bash(mv \"C:/Users/jgsar/OneDrive/Escritorio/Banda/web/CLAUDE.md\" \"C:/Users/jgsar/OneDrive/Escritorio/Banda/_safe/CLAUDE.md\")",
+      "Bash(mv \"C:/Users/jgsar/OneDrive/Escritorio/Banda/web/.claude\" \"C:/Users/jgsar/OneDrive/Escritorio/Banda/_safe/.claude\")",
+      "Read(//c/Users/jgsar/OneDrive/Escritorio/Banda/**)",
+      "Bash(pnpm create *)",
+      "Bash(npx --yes create-next-app@latest . --ts --eslint --tailwind --no-src-dir --app --turbopack --use-pnpm --import-alias \"@/*\" --yes)"
+    ]
+  }
+}
