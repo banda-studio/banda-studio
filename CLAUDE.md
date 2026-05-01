@@ -82,7 +82,7 @@ Tres tokens, cada uno cubre un tipo de elemento.
 | Token CSS (`@theme`) | Clase Tailwind | Valor | Uso |
 |---|---|---|---|
 | `--radius-pill` | `rounded-pill` | `9999px` (pill perfecto) | CTAs y links pill-shaped (botones, "More Works >") — siempre 100% redondeado |
-| `--radius-tag` | `rounded-tag` | `0.75em` (relativo al font-size) | Badges, chips, resaltados (badge "High-End", chips de servicios) — esquinas redondeadas pero no pill, escalan con el texto |
+| `--radius-tag` | `rounded-tag` | `clamp(0.5rem, 0.75em, 1rem)` (~8 → 16px, relativo al font-size con cap) | Badges, chips, resaltados (badge "High-End", chips de servicios) — esquinas redondeadas pero no pill, escalan con el texto y se cappean en 16px para que un highlight grande no parezca pill |
 | `--radius-section` | `rounded-section` | `70px` | Secciones grandes con `bg-surface-secondary` |
 
 `em` en lugar de `%`: con `%`, en CSS, el radius se calcula sobre el ancho/alto y queda elíptico/estirado en elementos alargados; con `em` el radius es circular y proporcional al texto, que es lo que define el tamaño visual de un tag.
@@ -97,7 +97,7 @@ Para un CTA con border gradient (`accent → border-fade`), usar el patrón **gl
 
 | Token CSS | Clase Tailwind | Tamaño | Uso |
 |---|---|---|---|
-| `--text-hero` | `text-hero` | `clamp(2.5rem, 5vw + 1rem, 3.75rem)` (~40 → 60px) | Título del hero |
+| `--text-hero` | `text-hero` | `clamp(3rem, 6vw + 1rem, 5.5rem)` (~48 → 88px) | Título del hero |
 | `--text-tagline` | `text-tagline` | `clamp(2rem, 3vw + 1rem, 2.5rem)` (~32 → 40px) | Taglines, h2 grandes |
 | `--text-title` | `text-title` | `25px` | Títulos de card, subsecciones |
 | `--text-subtitle` | `text-subtitle` | `21px` | Subtítulos |

@@ -41,13 +41,13 @@ Tres tokens. La filosofía: cada uno cubre un tipo distinto de elemento.
 | Token | Valor | Uso |
 |---|---|---|
 | `rounded-pill` | `9999px` (pill perfecto) | **CTAs y elementos pill-shaped**: botones, "More Works >", links navegacionales tipo pill. Siempre 100% redondeado, sin importar el tamaño. |
-| `rounded-tag` | `0.75em` (relativo al font-size) | **Resaltados y tags**: badge "High-End", chips de servicios ("3D", "2D Motion", etc.), labels de status. Esquinas redondeadas pero NO pill. Escala proporcional al texto. |
+| `rounded-tag` | `clamp(0.5rem, 0.75em, 1rem)` (8 → 16px, capped) | **Resaltados y tags**: badge "High-End", chips de servicios ("3D", "2D Motion", etc.), labels de status. Esquinas redondeadas pero NO pill. Escala proporcional al texto pero capped en 16px para que un highlight con `text-hero` (font-size 80+px) no termine pareciendo pill. |
 | `rounded-section` | `70px` | **Secciones grandes con fondo**: bloques con `bg-surface-secondary` y mucho padding. |
 
 ### Por qué cada uno tiene esa unidad
 
 - **`rounded-pill: 9999px`** — un valor enorme garantiza extremos siempre semicirculares. Si usaras un valor fijo en px (ej: 70px), un pill alto se vería bien pero uno bajito quedaría con esquinas "casi rectas".
-- **`rounded-tag: 0.75em`** — `em` es relativo al `font-size` del elemento. Un tag chico con `text-caption` tiene radius ~12px; un badge grande con `text-body` tiene radius ~13.5px. Visualmente equivalente. Nota: NO usamos `%` porque en CSS el `border-radius: X%` calcula el radius como % del ancho/alto del elemento (radius elíptico/estirado en elementos alargados — feo).
+- **`rounded-tag: clamp(0.5rem, 0.75em, 1rem)`** — `em` es relativo al `font-size` del elemento (un tag chico con `text-caption` queda ~12px; un mediano con `text-body` queda ~13.5px). El `clamp` cap a 16px para que un highlight con `text-hero` (~80+ px) no se vuelva pill. Mínimo 8px para que no desaparezca en textos chiquitos. Nota: NO usamos `%` puro porque en CSS `border-radius: X%` calcula el radius como % del ancho/alto del elemento (radius elíptico/estirado en elementos alargados — feo).
 - **`rounded-section: 70px`** — fijo. Las secciones grandes están en un rango de tamaños similar y un valor fijo da consistencia.
 
 ### Cuándo usar cuál

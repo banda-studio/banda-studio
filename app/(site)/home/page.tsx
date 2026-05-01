@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Header } from "@/components/layout/Header";
+import { Hero } from "@/components/sections/Hero";
 
 export const metadata: Metadata = {
   title: "Banda Studio — Digital Creative Studio",
@@ -13,10 +14,8 @@ export default function HomePage() {
     <>
       <Header />
       <main className="flex-1">
-        {/* WIP — Hero, Marquee, Services, frase y Footer llegan en commits siguientes. */}
-        <p className="py-32 text-center text-body text-white/40">
-          Home V1 — work in progress
-        </p>
+        <Hero />
+        {/* WIP — Marquee, Services, frase y Footer llegan en commits siguientes. */}
       </main>
     </>
   );

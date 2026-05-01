@@ -16,15 +16,18 @@
      el tamaño del elemento. Solo para CTAs y elementos pill-shaped (botones,
      "More Works >", links navegacionales). */
   --radius-pill: 9999px;
-  /* Tag/resaltado: esquinas redondeadas relativas al font-size. Asegura que
-     todos los tags y resaltados se vean igual de redondeados sin importar
-     su tamaño (badge "High-End", chips de servicios). */
-  --radius-tag: 0.75em;
+  /* Tag/resaltado: esquinas redondeadas relativas al font-size, con cap. El
+     0.75em escala con el texto (chip chico → ~12px, chip mediano → ~14px),
+     pero el max 1rem evita que un highlight con font-size enorme (badge
+     dentro de un text-hero, por ej.) termine pareciendo pill en lugar de
+     "cuadrado con bordes redondeados". Min 0.5rem para que no desaparezca
+     en textos chiquitos. */
+  --radius-tag: clamp(0.5rem, 0.75em, 1rem);
   /* Sección grande con fondo: 70px fijo, solo para bloques con bg-surface-secondary. */
   --radius-section: 70px;
 
   /* === Font sizes (with paired line-heights) === */
-  --text-hero: clamp(2.5rem, 5vw + 1rem, 3.75rem);
+  --text-hero: clamp(3rem, 6vw + 1rem, 5.5rem);
   --text-hero--line-height: 1.05;
 
   --text-tagline: clamp(2rem, 3vw + 1rem, 2.5rem);
