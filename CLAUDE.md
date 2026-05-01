@@ -62,7 +62,7 @@ Namespace: `surface` para fondos, `ink` para texto, `accent` para el celeste, `b
 @import "tailwindcss";
 
 @theme inline {
-  --color-surface-primary: #111111;
+  --color-surface-primary: #0A0A0A;
   --color-surface-secondary: #000000;
   --color-accent: #70BEFA;
   --color-border-fade: #666666;

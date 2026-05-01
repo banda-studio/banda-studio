@@ -2,7 +2,7 @@
 
 @theme inline {
   /* === Colors === */
-  --color-surface-primary: #111111;
+  --color-surface-primary: #0a0a0a;
   --color-surface-secondary: #000000;
   --color-accent: #70befa;
   --color-border-fade: #666666;
@@ -47,4 +47,27 @@
 
   /* === Font family === */
   --font-sans: var(--font-mona-sans), system-ui, sans-serif;
+
+  /* === Custom animations === */
+  /* Background blobs — movimiento amplio y duración corta para que se note. */
+  --animate-blob-1: blob-1 12s ease-in-out infinite;
+  --animate-blob-2: blob-2 14s ease-in-out infinite;
+}
+
+@keyframes blob-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(60%, 40%) scale(1.25);
+  }
+}
+
+@keyframes blob-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.85);
+  }
 }

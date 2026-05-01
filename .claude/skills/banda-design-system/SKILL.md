@@ -17,7 +17,7 @@ Namespace `surface` para fondos, `ink` para texto, `accent` para el celeste, `gl
 
 | Token Tailwind | Hex / valor | Uso |
 |---|---|---|
-| `bg-surface-primary` | `#111111` | Fondo principal del sitio |
+| `bg-surface-primary` | `#0A0A0A` | Fondo principal del sitio |
 | `bg-surface-secondary` | `#000000` | Secciones grandes con `rounded-section` |
 | `text-accent` / `border-accent` / `bg-accent` | `#70BEFA` | Acento celeste — bordes, hovers, highlights, extremo "vivo" del gradient de los CTAs |
 | `border-fade` / `bg-border-fade` | `#666666` | Extremo "apagado" del gradient en el border de los CTAs (gris medio) |
@@ -87,34 +87,44 @@ Si un diseño de Figma pide un radius distinto a los 3 tokens (ej: una card gran
 2. ¿Es un caso recurrente que justifica un token nuevo (ej: `rounded-card`)?
 3. ¿Es un one-off del Figma que en realidad debería ser uno de los tokens? (a veces el Figma tiene valores arbitrarios)
 
-## Patrón: glass + border con gradient (CTAs)
+## Patrón: CTA con border gradient (centro sólido)
 
-El CTA estándar del sitio (ej: "Let's work together!") tiene fondo glass + border con gradient lineal del celeste al gris (`accent → border-fade`). CSS no soporta `border: linear-gradient(...)` directamente con `border-radius`, así que se usa el truco del **wrapper con padding**.
+El CTA estándar del sitio (ej: "Get in touch", "Let's work together!") tiene **centro sólido** y un **border de 1px con gradient lineal del celeste al gris** (`accent → border-fade`). El centro NO es glass — es opaco para que cuando haya algo animándose en el background (blobs, partículas del hero) no se filtre por debajo del botón.
+
+CSS no soporta `border: linear-gradient(...)` directamente con `border-radius` (rompe la curva del radius). Por eso se usa la técnica de **doble background**: uno con `padding-box` (interior sólido) y otro con `border-box` (cubre el border de 1px con el gradient).
 
 ```tsx
-{/* Wrapper: gradient como bg, p-px da el "ancho" del border */}
-<div className="rounded-pill p-px bg-linear-to-br from-accent to-border-fade">
-  {/* Hijo: glass + el mismo radius. El gradient del wrapper "asoma" como border */}
-  <button
-    type="button"
-    className="block rounded-pill bg-glass-light backdrop-blur-md text-ink-primary px-9 py-3 text-body font-medium hover:bg-glass-dark transition-colors"
-  >
-    Let&apos;s work together!
-  </button>
-</div>
+<a
+  href="mailto:..."
+  className="
+    rounded-pill px-9 py-3 text-body font-medium text-ink-primary
+    border border-transparent
+    transition-opacity hover:opacity-90
+    [background:linear-gradient(var(--color-surface-primary),var(--color-surface-primary))_padding-box,linear-gradient(135deg,var(--color-accent),var(--color-border-fade))_border-box]
+  "
+>
+  Get in touch
+</a>
 ```
 
-### Por qué este patrón
+### Cómo funciona
 
-- `border-image: linear-gradient(...)` no respeta `border-radius` (el border se vuelve rectangular).
-- La técnica de doble background (`linear-gradient(...) border-box, ... padding-box`) funciona, pero el glass del child es semi-transparente y deja ver el gradient en el centro del botón, lo cual queda raro.
-- El wrapper con padding aísla el gradient al ring exterior y mantiene el glass limpio.
+- `border: 1px solid transparent` reserva el espacio del border de 1px sin pintarlo.
+- El primer layer del `background` (`linear-gradient(surface-primary, surface-primary) padding-box`) pinta el interior con un sólido `surface-primary` — el mismo color que el fondo de la página, así el botón se "funde" con el fondo en el centro.
+- El segundo layer (`linear-gradient(135deg, accent, border-fade) border-box`) pinta el gradient solo en la zona del border (porque el primer layer en `padding-box` lo tapa en el interior).
+- Resultado: pill con border gradient de 1px, centro opaco que NO deja ver lo que pasa atrás.
+
+### Por qué NO usamos glass-light en el centro
+
+Probamos antes con un wrapper p-px + child glass-light. El problema: glass-light es semi-transparente (32% blanco), y deja ver el gradient del wrapper / cualquier animación del fondo a través del centro del botón. Queda un "degradé interno" que no es lo que el Figma pide.
+
+Si en algún caso futuro un CTA específico SÍ tiene que ser glass (ej: superpuesto sobre una imagen de hero, donde se quiere "transparencia"), agregamos una variante `glass` al componente `<Button>`. Default, **sólido + border gradient**.
 
 ### Notas
 
-- Usá `p-px` (1px) para un border fino. Si el Figma pide 1.23px, igual `p-px` queda razonable — diferencias sub-pixel son irrelevantes en pantalla.
-- Tailwind v4 renombró las utilidades de gradient: usá `bg-linear-to-X` (no `bg-gradient-to-X` que es la sintaxis vieja v3). Direcciones: `to-r`, `to-br`, `to-b`, etc.
-- Cuando lo encapsules en un componente `<Button variant="cta">`, el patrón debería quedar adentro — el resto del código debería usar `<Button>` y olvidarse del wrapper.
+- `border border-transparent` mantiene el espacio del border. Si lo sacás, el child se "agranda" 2px.
+- Tailwind v4 renombró las utilidades de gradient: usá `bg-linear-to-X` (no `bg-gradient-to-X` que es la sintaxis vieja v3). Direcciones: `to-r`, `to-br`, `to-b`, etc. **Pero** en el `[background:...]` arbitrary del CTA usamos sintaxis CSS pura porque combinamos dos layers — no hay shorthand de Tailwind para eso.
+- Cuando encapsules el patrón en `<Button variant="cta">`, el arbitrary value se vuelve internal — el resto del código usa `<Button>` y se olvida.
 
 ## Tipografía — Mona Sans
 
@@ -222,7 +232,7 @@ Forma esperada de los tokens en `app/globals.css`:
 
 @theme inline {
   /* Colors */
-  --color-surface-primary: #111111;
+  --color-surface-primary: #0a0a0a;
   --color-surface-secondary: #000000;
   --color-accent: #70befa;
   --color-border-fade: #666666;

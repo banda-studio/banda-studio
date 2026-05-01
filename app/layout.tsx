@@ -10,9 +10,9 @@ const monaSans = Mona_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Banda Studio — Digital Creative Studio",
+  title: "Banda Studio — Coming Soon",
   description:
-    "We bring technical precision to your creative vision. 3D, 2D Motion, VFX, Digital Design, Branding, UX/UI, Websites, Illustrations.",
+    "Digital Creative Studio. We bring technical precision to your creative vision. New site under construction.",
 };
 
 export default function RootLayout({
@@ -25,7 +25,10 @@ export default function RootLayout({
       lang="en"
       className={`${monaSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-surface-primary text-ink-primary">
+      <body
+        className="min-h-full flex flex-col bg-surface-primary text-ink-primary"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>
