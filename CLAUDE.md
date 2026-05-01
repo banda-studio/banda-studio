@@ -55,7 +55,7 @@
 
 ### Design tokens — colores
 
-Namespace: `surface` para fondos, `ink` para texto, `accent` para el celeste, `glass` para superficies traslúcidas.
+Namespace: `surface` para fondos, `ink` para texto, `accent` para el celeste, `border-fade` para el extremo gris del gradient en el border de los CTAs, `glass` para superficies traslúcidas.
 
 ```css
 /* app/globals.css (referencia conceptual — Tailwind v4 CSS-first) */
@@ -65,6 +65,7 @@ Namespace: `surface` para fondos, `ink` para texto, `accent` para el celeste, `g
   --color-surface-primary: #111111;
   --color-surface-secondary: #000000;
   --color-accent: #70BEFA;
+  --color-border-fade: #666666;
   --color-ink-primary: #FFFFFF;
   --color-ink-on-chip: #231F20;
   --color-glass-light: rgba(255, 255, 255, 0.32);
@@ -72,16 +73,21 @@ Namespace: `surface` para fondos, `ink` para texto, `accent` para el celeste, `g
 }
 ```
 
-Uso en JSX: `bg-surface-primary`, `text-ink-primary`, `text-accent`, `bg-glass-light`, `text-ink-on-chip`, etc.
+Uso en JSX: `bg-surface-primary`, `text-ink-primary`, `text-accent`, `border-fade`, `bg-glass-light`, `text-ink-on-chip`, etc.
 
-### Border radius distintivo
+### Border radius
+
+Tres tokens, cada uno cubre un tipo de elemento.
 
 | Token CSS (`@theme`) | Clase Tailwind | Valor | Uso |
 |---|---|---|---|
+| `--radius-pill` | `rounded-pill` | `9999px` (pill perfecto) | CTAs y links pill-shaped (botones, "More Works >") — siempre 100% redondeado |
+| `--radius-tag` | `rounded-tag` | `0.75em` (relativo al font-size) | Badges, chips, resaltados (badge "High-End", chips de servicios) — esquinas redondeadas pero no pill, escalan con el texto |
 | `--radius-section` | `rounded-section` | `70px` | Secciones grandes con `bg-surface-secondary` |
-| `--radius-pill` | `rounded-pill` | `57px` | Botones tipo pill |
-| `--radius-badge` | `rounded-badge` | `17px` | Badges (ej: "High-End") |
-| `--radius-chip` | `rounded-chip` | `10px` | Chips de servicios |
+
+`em` en lugar de `%`: con `%`, en CSS, el radius se calcula sobre el ancho/alto y queda elíptico/estirado en elementos alargados; con `em` el radius es circular y proporcional al texto, que es lo que define el tamaño visual de un tag.
+
+Para un CTA con border gradient (`accent → border-fade`), usar el patrón **glass + wrapper con `p-px`** documentado en la skill `banda-design-system`.
 
 ### Tipografía
 

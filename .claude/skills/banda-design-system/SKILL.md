@@ -9,21 +9,22 @@ description: Tokens de diseño, escala tipográfica, border radius y reglas de e
 
 ## Por qué importa
 
-El diseño de Banda ya está cerrado en Figma. Inventar valores ad-hoc rompe la consistencia visual y genera deuda. Los tokens viven en `tailwind.config.ts` y deben usarse siempre que existan — nunca hardcodear el equivalente literal.
+El diseño de Banda ya está cerrado en Figma. Inventar valores ad-hoc rompe la consistencia visual y genera deuda. Los tokens viven en `app/globals.css` (Tailwind v4 — config CSS-first, no hay `tailwind.config.ts`) dentro de `@theme inline { ... }`. Usalos siempre que existan; nunca hardcodees el equivalente literal.
 
 ## Colores
 
-Namespace `surface` para fondos, `ink` para texto, `accent` para el celeste, `glass` para superficies traslúcidas.
+Namespace `surface` para fondos, `ink` para texto, `accent` para el celeste, `glass` para superficies traslúcidas, `border-fade` para el extremo "frío" de los gradients del border de CTAs.
 
 | Token Tailwind | Hex / valor | Uso |
 |---|---|---|
 | `bg-surface-primary` | `#111111` | Fondo principal del sitio |
 | `bg-surface-secondary` | `#000000` | Secciones grandes con `rounded-section` |
-| `text-accent` / `border-accent` / `bg-accent` | `#70BEFA` | Acento celeste — bordes, hovers, highlights |
+| `text-accent` / `border-accent` / `bg-accent` | `#70BEFA` | Acento celeste — bordes, hovers, highlights, extremo "vivo" del gradient de los CTAs |
+| `border-fade` / `bg-border-fade` | `#666666` | Extremo "apagado" del gradient en el border de los CTAs (gris medio) |
 | `text-ink-primary` | `#FFFFFF` | Texto sobre fondos oscuros |
-| `text-ink-onChip` | `#231F20` | Texto sobre chips de servicios (fondo claro) |
-| `bg-glass-light` | `rgba(255,255,255,0.32)` | Glass claro |
-| `bg-glass-dark` | `rgba(217,217,217,0.08)` | Glass oscuro |
+| `text-ink-on-chip` | `#231F20` | Texto sobre chips/pills de fondo claro |
+| `bg-glass-light` | `rgba(255,255,255,0.32)` | Glass claro — fondo de CTAs y cards traslúcidas |
+| `bg-glass-dark` | `rgba(217,217,217,0.08)` | Glass oscuro — overlays sutiles, hovers |
 
 ### Reglas
 
@@ -31,33 +32,93 @@ Namespace `surface` para fondos, `ink` para texto, `accent` para el celeste, `gl
 - El acento celeste (`#70BEFA`) es el único color "vivo". Usalo con criterio — si todo es accent, nada es accent.
 - Para texto secundario sobre fondo oscuro, bajá la opacidad del blanco (`text-white/60`, `text-white/80`) en lugar de inventar grises nuevos.
 - Nunca uses `bg-black` o `bg-white` literal — siempre el token correspondiente (`bg-surface-secondary`, `text-ink-primary`).
+- `border-fade` (`#666666`) tiene un único uso documentado: ser el "to" del gradient en el border de los CTAs (`from-accent to-border-fade`). No lo uses como color de fondo, texto, ni borde sólido — para eso preferí bajar la opacidad del blanco.
 
 ## Border radius
 
+Tres tokens. La filosofía: cada uno cubre un tipo distinto de elemento.
+
 | Token | Valor | Uso |
 |---|---|---|
-| `rounded-section` | `70px` | Secciones grandes con `bg-surface-secondary` |
-| `rounded-pill` | `57px` | Botones tipo pill |
-| `rounded-badge` | `17px` | Badges (ej: "High-End") |
-| `rounded-chip` | `10px` | Chips de servicios (3D, 2D Motion, etc.) |
+| `rounded-pill` | `9999px` (pill perfecto) | **CTAs y elementos pill-shaped**: botones, "More Works >", links navegacionales tipo pill. Siempre 100% redondeado, sin importar el tamaño. |
+| `rounded-tag` | `0.75em` (relativo al font-size) | **Resaltados y tags**: badge "High-End", chips de servicios ("3D", "2D Motion", etc.), labels de status. Esquinas redondeadas pero NO pill. Escala proporcional al texto. |
+| `rounded-section` | `70px` | **Secciones grandes con fondo**: bloques con `bg-surface-secondary` y mucho padding. |
+
+### Por qué cada uno tiene esa unidad
+
+- **`rounded-pill: 9999px`** — un valor enorme garantiza extremos siempre semicirculares. Si usaras un valor fijo en px (ej: 70px), un pill alto se vería bien pero uno bajito quedaría con esquinas "casi rectas".
+- **`rounded-tag: 0.75em`** — `em` es relativo al `font-size` del elemento. Un tag chico con `text-caption` tiene radius ~12px; un badge grande con `text-body` tiene radius ~13.5px. Visualmente equivalente. Nota: NO usamos `%` porque en CSS el `border-radius: X%` calcula el radius como % del ancho/alto del elemento (radius elíptico/estirado en elementos alargados — feo).
+- **`rounded-section: 70px`** — fijo. Las secciones grandes están en un rango de tamaños similar y un valor fijo da consistencia.
+
+### Cuándo usar cuál
+
+```tsx
+// CTA principal o link pill — siempre pill
+<button className="rounded-pill ...">Let's work together!</button>
+
+// Resaltado / badge / chip — esquinas redondeadas relativas
+<span className="rounded-tag ...">High-End</span>
+<span className="rounded-tag ...">3D</span>
+<span className="rounded-tag ...">Available now</span>
+
+// Sección grande con fondo
+<section className="rounded-section bg-surface-secondary p-20">...</section>
+```
 
 ### Regla crítica
 
-**Nunca hardcodear el valor literal.** Si necesitás 70px de radius, usá `rounded-section`, no `rounded-[70px]`. Si encontrás un valor hardcodeado en código existente, reemplazalo por el token.
+**Nunca hardcodear el valor literal.** Si necesitás un pill, usá `rounded-pill`, no `rounded-full` ni `rounded-[9999px]`. Si necesitás esquinas redondeadas de tag, usá `rounded-tag`, no `rounded-md` o `rounded-[12px]`. Si encontrás un valor hardcodeado en código existente, reemplazalo por el token.
 
 ```tsx
 // ❌ Mal
 <section className="rounded-[70px] bg-black">
+<button className="rounded-full ...">
+<span className="rounded-md ...">High-End</span>
 
 // ✅ Bien
 <section className="rounded-section bg-surface-secondary">
+<button className="rounded-pill ...">
+<span className="rounded-tag ...">High-End</span>
 ```
 
-Si un diseño de Figma pide un radius que no existe en los tokens (ej: 24px), **pará y preguntá** antes de hardcodearlo. Probablemente sea un error del Figma o un token nuevo que vale la pena agregar al config.
+Si un diseño de Figma pide un radius distinto a los 3 tokens (ej: una card grande con esquinas de 24px que no es ni pill ni section), **pará y preguntá** antes de inventar un token nuevo. Tres opciones a evaluar:
+
+1. ¿Se puede reusar `rounded-tag` (relativo) o `rounded-section` (fijo)?
+2. ¿Es un caso recurrente que justifica un token nuevo (ej: `rounded-card`)?
+3. ¿Es un one-off del Figma que en realidad debería ser uno de los tokens? (a veces el Figma tiene valores arbitrarios)
+
+## Patrón: glass + border con gradient (CTAs)
+
+El CTA estándar del sitio (ej: "Let's work together!") tiene fondo glass + border con gradient lineal del celeste al gris (`accent → border-fade`). CSS no soporta `border: linear-gradient(...)` directamente con `border-radius`, así que se usa el truco del **wrapper con padding**.
+
+```tsx
+{/* Wrapper: gradient como bg, p-px da el "ancho" del border */}
+<div className="rounded-pill p-px bg-linear-to-br from-accent to-border-fade">
+  {/* Hijo: glass + el mismo radius. El gradient del wrapper "asoma" como border */}
+  <button
+    type="button"
+    className="block rounded-pill bg-glass-light backdrop-blur-md text-ink-primary px-9 py-3 text-body font-medium hover:bg-glass-dark transition-colors"
+  >
+    Let&apos;s work together!
+  </button>
+</div>
+```
+
+### Por qué este patrón
+
+- `border-image: linear-gradient(...)` no respeta `border-radius` (el border se vuelve rectangular).
+- La técnica de doble background (`linear-gradient(...) border-box, ... padding-box`) funciona, pero el glass del child es semi-transparente y deja ver el gradient en el centro del botón, lo cual queda raro.
+- El wrapper con padding aísla el gradient al ring exterior y mantiene el glass limpio.
+
+### Notas
+
+- Usá `p-px` (1px) para un border fino. Si el Figma pide 1.23px, igual `p-px` queda razonable — diferencias sub-pixel son irrelevantes en pantalla.
+- Tailwind v4 renombró las utilidades de gradient: usá `bg-linear-to-X` (no `bg-gradient-to-X` que es la sintaxis vieja v3). Direcciones: `to-r`, `to-br`, `to-b`, etc.
+- Cuando lo encapsules en un componente `<Button variant="cta">`, el patrón debería quedar adentro — el resto del código debería usar `<Button>` y olvidarse del wrapper.
 
 ## Tipografía — Mona Sans
 
-**Familia única en todo el sitio.** No agregues otras fuentes. Cargada vía `next/font/google` (decisión pendiente entre Google CDN o self-host — ver CLAUDE.md sección 9).
+**Familia única en todo el sitio.** No agregues otras fuentes. Cargada vía `next/font/google` y expuesta como CSS var `--font-mona-sans` desde `app/layout.tsx`. El token `--font-sans` en `@theme` apunta a esa CSS var, así que `font-sans` y el body inherit todo funciona.
 
 ### Pesos disponibles
 
@@ -67,9 +128,9 @@ Si un diseño de Figma pide un radius que no existe en los tokens (ej: 24px), **
 
 No uses pesos fuera de estos tres. No uses `italic` salvo pedido explícito.
 
-### Escala tipográfica — tokens nativos de Tailwind
+### Escala tipográfica — tokens nativos de Tailwind v4
 
-Definidos en `tailwind.config.ts` bajo `theme.extend.fontSize`. Usalos como clases directas (`text-hero`, `text-body`), no como variables CSS.
+Definidos en `app/globals.css` dentro de `@theme inline { ... }`. Usalos como clases directas (`text-hero`, `text-body`), no como variables CSS.
 
 | Token | Tamaño | Uso |
 |---|---|---|
@@ -107,7 +168,7 @@ Definidos en `tailwind.config.ts` bajo `theme.extend.fontSize`. Usalos como clas
 
 ## Glass effects
 
-Los dos tokens `bg-glass-light` y `bg-glass-dark` se usan para superficies traslúcidas (cards sobre el hero, overlays, headers flotantes). Combinalos con `backdrop-blur` para el efecto completo:
+Los dos tokens `bg-glass-light` y `bg-glass-dark` se usan para superficies traslúcidas (cards sobre el hero, overlays, headers flotantes, fondo de CTAs). Combinalos con `backdrop-blur` para el efecto completo:
 
 ```tsx
 <div className="bg-glass-light backdrop-blur-md rounded-pill px-6 py-3">
@@ -121,28 +182,37 @@ No inventes nuevos `rgba()` para glass. Si necesitás otra opacidad, preguntá a
 
 Cuando crees `/components/ui/`, estos componentes encapsulan los tokens. Antes de inline-ar clases en una sección, **verificá si ya existe el componente**:
 
-- `Button` — variantes: primary (con accent), secondary (glass). Usa `rounded-pill`.
-- `Pill` — versión genérica del shape pill.
-- `ServiceChip` — `rounded-chip`, fondo claro, texto `text-ink-onChip`.
-- `Badge` — `rounded-badge`, ej: "High-End" rotado `-3.82deg`.
+- `Button` — variantes:
+  - `cta` (principal): glass + gradient border (`from-accent to-border-fade`), `rounded-pill`. Usa el wrapper con `p-px`.
+  - `secondary`: solo glass + `rounded-pill` (sin gradient border).
+- `Pill` — wrapper genérico con `rounded-pill`, padding configurable. Útil si el botón no es un CTA pero comparte la forma pill (ej: link navegacional pill-shaped).
+- `ServiceChip` — `rounded-tag`, fondo claro (`bg-ink-primary`), texto `text-ink-on-chip`. Para los chips "3D, 2D Motion, VFX, etc."
+- `Badge` — `rounded-tag`, glass o accent. Ej: "High-End" rotado `-3.82deg`.
+
+Diferenciación clara: `Button` y `Pill` usan **`rounded-pill`** (pill perfecto). `ServiceChip` y `Badge` usan **`rounded-tag`** (esquinas redondeadas relativas).
 
 ## Rotaciones y detalles del Figma
 
-El badge "High-End" en el hero está rotado `-3.82deg`. Mantené ese valor exacto — no lo redondees a `-4deg`. Lo mismo aplica a otros valores específicos del Figma: respetá lo que dice el archivo, no lo "limpies" a ojo.
+El badge "High-End" en el hero está rotado `-3.82deg`. Mantené ese valor exacto — no lo redondees a `-4deg`. Lo mismo aplica a otros valores específicos del Figma (ej: el border de 1.23px del CTA): respetá lo que dice el archivo, no lo "limpies" a ojo. Si el spec del Figma tiene un valor que no entra en los tokens y NO es un error, agregá el caso a esta skill antes de seguir.
 
 ## Checklist mental al crear o editar algo visual
 
-1. ¿Estoy usando un token de color (`surface-*`, `ink-*`, `accent`, `glass-*`) en vez de un hex hardcodeado?
-2. ¿El border radius es uno de los 4 tokens, o estoy inventando un valor?
+1. ¿Estoy usando un token de color (`surface-*`, `ink-*`, `accent`, `border-fade`, `glass-*`) en vez de un hex hardcodeado?
+2. ¿Qué tipo de elemento es?
+   - CTA / link pill → `rounded-pill` (siempre 100% redondeado).
+   - Badge / chip / tag / resaltado → `rounded-tag` (esquinas redondeadas relativas al texto).
+   - Sección grande con fondo → `rounded-section` (70px fijo).
+   - Otra cosa → preguntar antes de inventar un radius nuevo.
 3. ¿El tamaño de texto es un token de la escala (`text-hero`, `text-body`, etc.) o estoy hardcodeando px?
 4. ¿Estoy usando Mona Sans con peso 400/500/600?
-5. ¿El componente atómico que necesito ya existe en `/components/ui/`?
+5. ¿Si es un CTA, está usando el patrón glass + gradient border documentado en esta skill?
+6. ¿El componente atómico que necesito ya existe en `/components/ui/`?
 
 Si alguna respuesta es "no", parate y reconsiderá antes de seguir.
 
 ## Referencia rápida — config de tokens (Tailwind v4, CSS-first)
 
-> **Importante:** Este proyecto usa **Tailwind CSS v4**. **No existe `tailwind.config.ts`.** Toda la configuración vive en `app/globals.css` dentro de `@theme inline { ... }`. Las clases utilitarias en JSX (`bg-surface-primary`, `rounded-section`, `text-hero`) se siguen usando igual.
+> **Importante:** Este proyecto usa **Tailwind CSS v4**. **No existe `tailwind.config.ts`.** Toda la configuración vive en `app/globals.css` dentro de `@theme inline { ... }`. Las clases utilitarias en JSX (`bg-surface-primary`, `rounded-pill`, `text-hero`) se siguen usando igual.
 
 Forma esperada de los tokens en `app/globals.css`:
 
@@ -154,17 +224,17 @@ Forma esperada de los tokens en `app/globals.css`:
   /* Colors */
   --color-surface-primary: #111111;
   --color-surface-secondary: #000000;
-  --color-accent: #70BEFA;
-  --color-ink-primary: #FFFFFF;
-  --color-ink-on-chip: #231F20;
+  --color-accent: #70befa;
+  --color-border-fade: #666666;
+  --color-ink-primary: #ffffff;
+  --color-ink-on-chip: #231f20;
   --color-glass-light: rgba(255, 255, 255, 0.32);
   --color-glass-dark: rgba(217, 217, 217, 0.08);
 
   /* Border radius */
-  --radius-section: 70px;
-  --radius-pill: 57px;
-  --radius-badge: 17px;
-  --radius-chip: 10px;
+  --radius-pill: 9999px;       /* CTAs, links pill (siempre 100% redondeado) */
+  --radius-tag: 0.75em;        /* Badges, chips, resaltados (relativo al font-size) */
+  --radius-section: 70px;      /* Secciones grandes con bg-surface-secondary */
 
   /* Font sizes — el sufijo `--line-height` ata el line-height al tamaño */
   --text-hero: clamp(2.5rem, 5vw + 1rem, 3.75rem);
@@ -185,13 +255,6 @@ Forma esperada de los tokens en `app/globals.css`:
   /* Font family — Mona Sans expuesta como CSS var por next/font/google */
   --font-sans: var(--font-mona-sans), system-ui, sans-serif;
 }
-
-/* Defaults globales */
-body {
-  background: var(--color-surface-primary);
-  color: var(--color-ink-primary);
-  font-family: var(--font-sans);
-}
 ```
 
 ### Notas de la sintaxis v4
@@ -200,5 +263,6 @@ body {
 - **Nombres con guion:** `--color-ink-on-chip` se usa en JSX como `text-ink-on-chip` (kebab-case completo).
 - **Line-height pareado:** la convención v4 para atar un line-height a un font-size es `--text-X--line-height: Y`.
 - **`@theme inline`:** el modifier `inline` evita que las CSS vars sean accedidas en runtime — los valores se compilan directamente en las utilities. Útil para tokens estáticos como los nuestros.
+- **Gradients:** usá `bg-linear-to-X` (v4), no `bg-gradient-to-X` (v3 deprecated).
 
 Esta config es la **fuente de verdad**. Si algo de la skill se contradice con el `globals.css` real, **gana el CSS** — actualizá esta skill para reflejarlo.
