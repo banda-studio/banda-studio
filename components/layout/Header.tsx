@@ -22,7 +22,7 @@ import { ServicesDropdown } from "./ServicesDropdown";
 export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/5 bg-surface-secondary/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[1920px] items-center justify-between gap-8 px-6 py-4 sm:px-10">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-8 px-6 py-4 sm:px-10 lg:px-16">
         <Link
           href="/home"
           aria-label="Banda Studio — go to home"

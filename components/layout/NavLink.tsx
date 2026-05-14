@@ -21,7 +21,7 @@ export function NavLink({ href, children }: NavLinkProps) {
     <Link
       href={href}
       aria-current={isActive ? "page" : undefined}
-      className="relative text-body-lg text-ink-primary transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none"
+      className="relative text-caption font-medium text-ink-primary transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none"
     >
       {children}
       {/* Underline pegado al border-bottom del header. -bottom-4 = py-4 del header. */}

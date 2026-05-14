@@ -60,12 +60,12 @@ export function ServicesDropdown() {
         aria-haspopup="menu"
         aria-controls={menuId}
         aria-current={isActive ? "page" : undefined}
-        className="relative inline-flex items-center gap-1 text-body-lg text-ink-primary transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none"
+        className="relative inline-flex items-center gap-1 text-caption font-medium text-ink-primary transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none"
       >
         Services
         <svg
-          width="20"
-          height="20"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           fill="none"
           aria-hidden="true"
@@ -117,7 +117,7 @@ export function ServicesDropdown() {
               href={`/services/${service.slug}`}
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="block rounded-tag px-4 py-2 text-body text-ink-primary transition-colors hover:bg-glass-light focus-visible:bg-glass-light focus-visible:outline-none"
+              className="block rounded-tag px-4 py-2 text-caption text-ink-primary transition-colors hover:bg-glass-light focus-visible:bg-glass-light focus-visible:outline-none"
             >
               {service.name}
             </Link>

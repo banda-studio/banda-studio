@@ -4,18 +4,24 @@ import { useState } from "react";
 
 interface EmailLinkProps {
   email: string;
+  /**
+   * Versión más chica (text-body + círculo h-6). Usada en CTAs donde compite
+   * por espacio horizontal con otros elementos. Default = false (versión
+   * grande del header).
+   */
+  compact?: boolean;
 }
 
 /**
- * Email del header. Click → copia al clipboard + muestra "Email copied" 2s.
- * Si el clipboard API no está disponible (browser viejo, contexto inseguro
- * tipo http://), cae a `mailto:` clásico.
+ * Email del header / CTA. Click → copia al clipboard + muestra "Email copied"
+ * 2s. Si el clipboard API no está disponible (browser viejo, contexto
+ * inseguro tipo http://), cae a `mailto:` clásico.
  *
  * El elemento es `<a href="mailto:...">` para que (1) screen readers lo
  * anuncien como link, (2) right-click → "Copy link address" funcione,
  * (3) si JS falla, igual abre el cliente de mail.
  */
-export function EmailLink({ email }: EmailLinkProps) {
+export function EmailLink({ email, compact = false }: EmailLinkProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
@@ -33,20 +39,32 @@ export function EmailLink({ email }: EmailLinkProps) {
     }
   }
 
+  // Tamaño "default" (header): text-caption (16px). El email es navegación,
+  // no contenido principal → no debería gritar.
+  // Tamaño "compact" (CTA card): igual size pero círculo aún más chico.
+  const textSize = "text-caption";
+  const iconBox = compact ? "h-5 w-5" : "h-6 w-6";
+  const iconSize = compact ? 10 : 12;
+
   return (
     <a
       href={`mailto:${email}`}
       onClick={handleClick}
       aria-label={`Copy email ${email} to clipboard`}
-      className="relative inline-flex items-center gap-2 text-body-lg text-ink-primary transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none"
+      className={`relative inline-flex items-center gap-2 ${textSize} text-ink-primary transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none`}
     >
       <span>{email}</span>
       {/* Círculo con flecha diagonal arrow-up-right (estilo "abrir/actuar"). */}
       <span
         aria-hidden="true"
-        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill border border-white/20"
+        className={`inline-flex shrink-0 items-center justify-center rounded-pill border border-white/20 ${iconBox}`}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <svg
+          width={iconSize}
+          height={iconSize}
+          viewBox="0 0 24 24"
+          fill="none"
+        >
           <path
             d="M7 17 17 7M7 7h10v10"
             stroke="currentColor"

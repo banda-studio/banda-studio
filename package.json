@@ -10,14 +10,19 @@
     "typegen": "sanity schema extract && sanity typegen generate"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "@sanity/client": "^7.22.0",
     "@sanity/image-url": "^2.1.1",
     "@sanity/vision": "^5.23.0",
+    "gsap": "^3.15.0",
     "next": "16.2.4",
     "next-sanity": "^12.4.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sanity": "^5.23.0"
+    "sanity": "^5.23.0",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

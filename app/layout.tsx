@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Mona_Sans } from "next/font/google";
+
+import { LiquidGlassFilter } from "@/components/ui/LiquidGlassFilter";
+
 import "./globals.css";
 
 const monaSans = Mona_Sans({
@@ -29,6 +32,8 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-surface-primary text-ink-primary"
         suppressHydrationWarning
       >
+        {/* SVG filter usado por todos los <LiquidGlass>. Una sola instancia. */}
+        <LiquidGlassFilter />
         {children}
       </body>
     </html>

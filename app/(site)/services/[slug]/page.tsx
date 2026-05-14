@@ -1,0 +1,96 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+
+import { Header } from "@/components/layout/Header";
+import { ContactCTA } from "@/components/sections/ContactCTA";
+import { ServicePageHero } from "@/components/sections/ServicePageHero";
+import { ServiceProjectGrid } from "@/components/sections/ServiceProjectGrid";
+import { serviceDetails, type ServiceSlug } from "@/lib/services";
+import { getYouTubeAspect } from "@/lib/utils/youtubeAspect";
+
+type Params = { slug: string };
+
+/**
+ * Páginas internas de servicios: `/services/3d-modeling`, `/services/2d-motion`,
+ * `/services/vfx`, etc.
+ *
+ * Layout (matchea el frame "Interna" del Figma):
+ * 1. Header sticky.
+ * 2. Hero — imagen de fondo + card centrada con título + descripción + CTA.
+ * 3. Grid asimétrico 2×2 de proyectos seleccionados.
+ * 4. CTA final "Have an idea?" (reuso del componente de la home).
+ *
+ * Server Component. `generateStaticParams` pre-genera todos los slugs al
+ * build → SEO máximo + cero latency en producción. Cuando migremos a Sanity
+ * va a quedar igual, solo cambia de dónde se leen los datos.
+ */
+export default async function ServicePage({
+  params,
+}: {
+  params: Promise<Params>;
+}) {
+  const { slug } = await params;
+  const service = serviceDetails[slug as ServiceSlug];
+  if (!service) notFound();
+
+  // Resolver el aspect ratio NATIVO de cada video desde el thumbnail de
+  // YouTube. Promise.all → fetches en paralelo (rápido). Cada uno está
+  // cacheado por Next 1 día, así el primer build es la única vez que pega
+  // a YouTube por video.
+  const projects = await Promise.all(
+    service.projects.map(async (p) => ({
+      ...p,
+      aspectRatio: await getYouTubeAspect(p.videoId),
+    })),
+  );
+
+  // Si el servicio define un `customLayout`, lo resolvemos a `rows` con los
+  // proyectos completos (con aspect detectado). Si no, el grid auto-
+  // distribuye en columnas según aspect ratio.
+  const projectMap = new Map(projects.map((p) => [p.videoId, p]));
+  const customLayout =
+    "customLayout" in service ? service.customLayout : undefined;
+  const rows = customLayout
+    ? customLayout.map((rowIds) =>
+        rowIds
+          .map((id) => projectMap.get(id))
+          .filter((p): p is (typeof projects)[number] => !!p),
+      )
+    : undefined;
+
+  return (
+    <>
+      <Header />
+      <main className="flex-1">
+        <ServicePageHero
+          name={service.name}
+          description={service.description}
+          // Primer proyecto = hero piece. Mismo que se ve en el showcase de
+          // la home, ahora a full pantalla loopeando en HD.
+          heroVideoId={service.projects[0].videoId}
+        />
+        <ServiceProjectGrid projects={projects} rows={rows} />
+        <ContactCTA />
+      </main>
+    </>
+  );
+}
+
+export function generateStaticParams(): Params[] {
+  return Object.keys(serviceDetails).map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<Params>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const service = serviceDetails[slug as ServiceSlug];
+  if (!service) return {};
+
+  return {
+    title: `${service.name} — Banda Studio`,
+    description: service.description,
+  };
+}
