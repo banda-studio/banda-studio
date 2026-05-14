@@ -97,14 +97,14 @@ function ParticleField() {
     let width = 0;
     let height = 0;
 
-    function resize() {
+    const resize = () => {
       const rect = canvas.getBoundingClientRect();
       width = rect.width;
       height = rect.height;
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
+    };
 
     resize();
 
@@ -133,22 +133,22 @@ function ParticleField() {
     let mx = -9999;
     let my = -9999;
 
-    function onMouseMove(e: MouseEvent) {
+    const onMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       mx = e.clientX - rect.left;
       my = e.clientY - rect.top;
-    }
-    function onMouseLeave() {
+    };
+    const onMouseLeave = () => {
       mx = -9999;
       my = -9999;
-    }
+    };
 
     window.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseleave", onMouseLeave);
     window.addEventListener("resize", resize);
 
     let raf = 0;
-    function tick() {
+    const tick = () => {
       // Clear total del canvas cada frame. Antes usábamos un fillRect con
       // alpha bajo para crear trails de humo, pero después de un rato las
       // trails dejan "polvo" residual (los gradientes nunca terminan de
@@ -206,7 +206,7 @@ function ParticleField() {
       }
 
       raf = requestAnimationFrame(tick);
-    }
+    };
     tick();
 
     return () => {
