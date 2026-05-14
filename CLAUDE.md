@@ -303,27 +303,90 @@ import { client } from '@/lib/sanity/client'
 - [ ] Form de contacto: Resend vs. Formspree.
 - [ ] Estructura final de `/work/[slug]` (¿hace falta o alcanza con services?).
 - [ ] Estrategia de revalidación de Sanity: webhook a Vercel vs. ISR con tag-based revalidation. *(La skill `nextjs-sanity-stack` recomienda combinar ambas.)*
-- [ ] Migración a Vimeo cuando haya presupuesto.
+- [ ] Migración a Vimeo (Pro) o hosting propio para calidad de video garantizada — actualmente YouTube embed funciona pero hace throttling de quality cuando hay varios videos en pantalla.
+- [ ] Pulir cubo 3D del hero (paused) — ver §10.
+- [ ] Cargar contenido en Sanity y cambiar a fetch dinámico (hoy todo está hardcoded en `lib/services.ts`).
+- [ ] Imágenes hero por servicio (hoy hero del service usa el primer video del grid como fondo).
 
 ---
 
 ## 10. Estado del proyecto
 
-**Etapa actual:** Repo iniciado en GitHub (`banda-studio/banda-studio`). Next.js 16 + Tailwind v4 + TypeScript scaffold listo. Skills project-specific (`banda-design-system`, `nextjs-sanity-stack`) creadas.
+**Etapa actual:** Home completa con todas las secciones, 3 páginas internas de servicios funcionando (`/services/3d-modeling`, `/services/2d-motion`, `/services/vfx`), todo en pre-render estático. Deployado a Vercel (https://banda-studio.vercel.app). Dominio `banda.studio` en proceso de transferencia de Wix → Namecheap.
 
-**Próximos pasos sugeridos (en orden):**
+### Lo que está hecho
 
-1. ~~Inicializar repo Next.js + TypeScript + Tailwind con pnpm.~~ ✅
-2. Setup de tokens de diseño en `app/globals.css` (`@theme`) + carga de Mona Sans con `next/font/google`.
-3. Configurar Sanity (proyecto, dataset, schemas base, Studio embebido).
-4. Componentes atómicos (`Button`, `Pill`, `ServiceChip`, `Badge`).
-5. Header + Nav.
-6. Hero con Spline (con fallback).
-7. Resto de secciones de la home.
-8. Páginas dinámicas de servicios.
-9. About.
-10. Deploy a Vercel.
+**Páginas:**
+- `/` — Landing de maintenance ("Coming soon"). `robots.txt` bloquea indexación de todo el sitio durante la construcción.
+- `/home` — Home completa (ver secciones abajo).
+- `/services/3d-modeling` | `/services/2d-motion` | `/services/vfx` — pre-generadas vía `generateStaticParams`. Las páginas para Graphic Design y Website están en el código pero comentadas hasta que haya piezas.
+- `/studio` — Sanity Studio embebido (cliente listo, sin contenido cargado).
+
+**Secciones de la home (en orden):**
+1. `Header` (sticky, glass blur) con dropdown de Services + EmailLink con copy-to-clipboard.
+2. `Hero` — título con chip "High-End" inline + bajada + CTA pill. Background: `HeroBackground` con blobs CSS + campo de 450 partículas Canvas2D reactivas al mouse.
+3. `Marquee` — banda horizontal con 8 specialties duplicadas en loop infinito (pause on hover, respeta `prefers-reduced-motion`).
+4. `ServicesShowcase` — sección scroll-pinned estilo Lusion con GSAP ScrollTrigger. Crossfade entre los 3 servicios con video disponible (3D, 2D Motion, VFX). Cada servicio: título + descripción + "More Works" + video.
+5. `Tagline` — frase grande "Whatever you're building, we'd love to be part of it.".
+6. `ContactCTA` — card con animación "wireframe drag" (cursor dibuja la caja desde una esquina) usando GSAP. Adentro: título "Have an [idea?] Let's work together!" (idea? con chip glass + rotación + italic) + descripción + "Learn more about us" pill + email.
+
+**Secciones de páginas internas (`/services/[slug]`):**
+1. `Header` (mismo).
+2. `ServicePageHero` — video full-bleed (HD, loop, mute) del primer proyecto. Encima: card LiquidGlass con título + descripción + CTA. En mobile, gradient placeholder en lugar de video.
+3. `ServiceProjectGrid` — grid de proyectos. Dos modos:
+   - **Auto** (3D): 2 columnas asimétricas (`16fr` / `9fr`). Landscape → izquierda, portrait → derecha, squares balancean heights.
+   - **Manual** (2D, VFX): `customLayout: string[][]` en `lib/services.ts` define filas explícitas. Cada fila reparte width con `flex: aspectRatio 1 0` → todos los items en una fila quedan a la misma altura sin recortes.
+4. `ContactCTA` (mismo de home).
+
+**Componentes UI (`components/ui/`):**
+- `LiquidGlass` — wrapper de efecto vidrio con 2 tonos:
+  - `light` (default): chips chicos (High-End, idea?). Box-shadow stack que simula curvatura de pill + SVG displacement map (`url(#liquid-glass)`).
+  - `subtle`: boxes rectangulares grandes (hero card de service pages). Box-shadow simplificado (`.liquid-glass-lens-subtle`), sin displacement, tint más oscuro (rgba 0.25), saturate 115%.
+- `LiquidGlassFilter` — SVG filter montado una vez en `app/layout.tsx`. Define `#liquid-glass` con `feImage` (WebP displacement map base64 en `lib/liquidGlassDisplacementMap.ts`) + `feGaussianBlur` + `feDisplacementMap`.
+- `YouTubeLoopVideo` — embed de YouTube decorativo. Loop vía YouTube IFrame API (no usa `loop=1&playlist` que dispara los controles ⏮ ⏸ ⏭). Lazy mount con IntersectionObserver (rootMargin 300px) + `pauseVideo()` cuando sale del viewport para no saturar la red.
+
+**Detección automática de aspect ratio:**
+- `lib/utils/youtubeAspect.ts` scrapea el HTML de `youtube.com/watch?v=ID` y extrae width/height de los `adaptiveFormats` JSON embebido. Devuelve `"W/H"` (ej: `"640/360"`, `"360/640"`). Cached por Next 1 día via `next: { revalidate: 86400 }`.
+- Se invoca en `app/(site)/services/[slug]/page.tsx` antes de pasar a `ServiceProjectGrid`.
+
+**Design system aplicado:**
+- Tokens en `app/globals.css` (`@theme`): colors (`surface-primary/secondary`, `ink-primary/on-chip`, `accent`, `border-fade`, `glass-light/dark`), border-radius (`pill`, `tag`, `section`), font sizes (`hero`, `tagline`, `title`, `subtitle`, `body-lg`, `body`, `caption`), Mona Sans.
+- Layout: contenedor estándar `max-w-[1440px]` + `px-6 sm:px-10 lg:px-16`. La zona de videos en las service pages usa `lg:px-40` (padding doble) para que los tiles respiren.
+- Tipografía afinada en una segunda pasada (mayo 2026): nav/email/CTAs bajados de `text-body-lg` (19px) y `text-body` (18px) a `text-caption` (16px) `font-medium`. Marquee chips bajados de 25px → 19px.
+
+**Performance / animaciones:**
+- GSAP (`@gsap/react` + ScrollTrigger) — usado en ServicesShowcase (scroll-pin) y ContactCTA (wireframe-draw).
+- Particles Canvas2D — 450 partículas, clearRect cada frame (no trails que se acumulan), reactivas al mouse con repulsión.
+- Tres.js + R3F + drei están instaladas (cubo 3D paused para V2). Si las querés sacar para reducir bundle, `pnpm remove three @react-three/fiber @react-three/drei` — el archivo `components/sections/HeroForeground.tsx` y `GlassCube.tsx` siguen en disco como referencia.
+
+### Lo que está paused
+
+**Cubo 3D del hero (HeroForeground / GlassCube)**:
+- Three.js + R3F + drei + meshPhysicalMaterial con iridescence + dispersion + clearcoat.
+- Sigue el mouse, rota lento, vidrio iridiscente con split RGB en los bordes.
+- En dev tiene issues recurrentes de WebGL context-lost (strict mode + Canvas remount). En producción debería andar bien.
+- **NO se renderiza ahora**: `<HeroForeground />` está comentado en `Hero.tsx`. Para retomarlo: descomentar el import y la línea.
+- Decisión: el efecto no terminó de gustar; se va a retrabajar en una "V2" / segunda landing más adelante.
+
+### Decisiones técnicas tomadas
+
+1. **YouTube vs Vimeo**: arrancamos con YouTube (free) usando un helper que ya parsea ID y construye URLs limpias (`lib/utils/youtubeEmbed.ts`). Cuando haya presupuesto, migrar a Vimeo Pro — el schema de Sanity y los helpers ya están diseñados para soportar ambas plataformas.
+2. **Aspect ratios de los videos**: NO se hardcodean. Se detectan en build time scrapeando el HTML del video. Si el detect falla devuelve `"16/9"` como fallback.
+3. **`column: "left" | "right"`** opcional por proyecto: override manual del auto-distribute cuando un video "casi-cuadrado" (~0.8) debe ir a una columna específica.
+4. **`customLayout: string[][]`** opcional por servicio: override completo del auto-distribute con filas manuales. Cada fila se renderiza como flex-row con `flex: aspectRatio 1 0` por item → heights matchean.
+5. **LiquidGlass tone="subtle"** sin SVG displacement: el WebP displacement map tiene forma de pill bakeada — sobre boxes rectangulares grandes proyectaba una "lente fantasma". En `subtle` se skipea el `url()` y queda blur+saturate limpio.
+6. **`rounded-[inherit]` solo en el lens, no en el outer del LiquidGlass**: si está en ambos, Tailwind genera reglas que pelean y `inherit` (que computa a 0 sin padre) puede ganar — bug visible que apareció en mayo 2026.
+
+### Próximos pasos sugeridos
+
+1. **Footer** — todavía no existe. Logo + links sociales + copyright. Probablemente sale del próximo frame del Figma.
+2. **`/about` page** — copy hardcoded del estudio.
+3. **Form de contacto** — Resend o Formspree.
+4. **Contenido en Sanity** — cargar 3-5 services + 2-3 projects en el Studio, cambiar `serviceDetails` hardcoded por fetch contra `serviceBySlugQuery`.
+5. **Imágenes hero por servicio** — reemplazar el video-como-fondo del ServicePageHero por una pieza específica diseñada para hero.
+6. **Vercel custom domain** — apenas termine la transferencia de Wix → Namecheap.
+7. **Retomar cubo 3D** en una V2 (decisión de Jor).
 
 ---
 
-*Última actualización: abril 2026.*
+*Última actualización: mayo 2026.*
