@@ -23,7 +23,7 @@ export function Marquee() {
   return (
     <section
       aria-labelledby="marquee-title"
-      className="overflow-hidden bg-surface-secondary py-8"
+      className="overflow-hidden bg-surface-primary py-8"
     >
       <div className="mx-auto flex w-full max-w-[1440px] items-center gap-10 px-6 sm:px-10 lg:px-16">
         <h2
@@ -39,11 +39,11 @@ export function Marquee() {
           {/* Edge fades para que los chips parezcan disolverse en los bordes. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-surface-secondary to-transparent"
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-surface-primary to-transparent"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-surface-secondary to-transparent"
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-surface-primary to-transparent"
           />
 
           {/*

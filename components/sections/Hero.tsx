@@ -1,6 +1,7 @@
+import Link from "next/link";
+
 import { HeroBackground } from "@/components/sections/HeroBackground";
 import { LiquidGlass } from "@/components/ui/LiquidGlass";
-import { CONTACT_EMAIL } from "@/lib/services";
 
 // `HeroForeground` (cubo de vidrio 3D) está pausado hasta una V2. Cuando
 // se retome, importarlo y agregar `<HeroForeground />` antes del cierre
@@ -24,7 +25,7 @@ export function Hero() {
   return (
     <section
       aria-labelledby="hero-title"
-      className="relative flex min-h-screen items-center overflow-hidden"
+      className="relative isolate flex min-h-screen items-center overflow-hidden rounded-b-section bg-surface-secondary"
     >
       <HeroBackground />
 
@@ -49,12 +50,12 @@ export function Hero() {
         </p>
 
         {/* CTA — solid center + gradient border (patrón del design system). */}
-        <a
-          href={`mailto:${CONTACT_EMAIL}`}
-          className="rounded-pill border border-transparent px-7 py-2.5 text-caption font-medium text-ink-primary transition-opacity hover:opacity-90 [background:linear-gradient(var(--color-surface-primary),var(--color-surface-primary))_padding-box,linear-gradient(135deg,var(--color-accent),var(--color-border-fade))_border-box]"
+        <Link
+          href="/contact"
+          className="rounded-pill border border-transparent px-7 py-2.5 text-caption font-medium text-ink-primary transition-opacity hover:opacity-90 [background:linear-gradient(var(--color-surface-secondary),var(--color-surface-secondary))_padding-box,linear-gradient(135deg,var(--color-accent),var(--color-border-fade))_border-box]"
         >
           Let&apos;s work together!
-        </a>
+        </Link>
       </div>
     </section>
   );

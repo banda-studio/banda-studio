@@ -7,7 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 import { showcaseServices } from "@/lib/services";
-import { youtubeEmbedUrl } from "@/lib/utils/youtubeEmbed";
+import { YouTubeLoopVideo } from "@/components/ui/YouTubeLoopVideo";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -106,10 +106,10 @@ export function ServicesShowcase() {
       aria-label="Featured services"
       className="bg-surface-primary"
     >
-      <div className="flex min-h-screen items-center py-8 lg:py-10">
-        <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-10 lg:px-16">
-          {/* overflow-hidden es CRÍTICO: corta las cards que están off-screen. */}
-          <div className="overflow-hidden rounded-section bg-surface-secondary">
+      {/* overflow-hidden es CRÍTICO: corta las cards que están off-screen. */}
+      <div className="overflow-hidden rounded-section bg-surface-secondary">
+        <div className="flex min-h-screen items-center py-8 lg:py-10">
+          <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-10 lg:px-16">
             <div className="relative flex flex-col gap-12 motion-safe:lg:grid">
               {showcaseServices.map((service) => (
                 <article
@@ -147,10 +147,11 @@ export function ServicesShowcase() {
                     izquierdas hacen match con la curvatura del contenedor
                     exterior.
                   */}
-                  <div className="pr-8 pb-8 lg:pr-10 lg:pb-10">
-                    <DecorativeVideo
+                  <div className="px-8 pb-8 lg:px-12 lg:pb-12">
+                    <YouTubeLoopVideo
                       videoId={service.videoId}
                       title={`${service.name} — featured work`}
+                      className="relative aspect-[1731/781] max-h-[70vh] w-full overflow-hidden rounded-2xl"
                     />
                   </div>
                 </article>
@@ -160,48 +161,6 @@ export function ServicesShowcase() {
         </div>
       </div>
     </section>
-  );
-}
-
-/**
- * Video decorativo de YouTube embed. Reproduce automáticamente, en mute, loop
- * infinito, sin controles ni marcas visibles.
- *
- * Para ocultar el branding residual de YouTube:
- * - `pointer-events-none` en el iframe → no aparecen overlays on hover ni el
- *   info-card del canal on pause.
- * - Iframe escalado 1.15× con offsets negativos para sacar de viewport el
- *   logo del player que YouTube nunca termina de ocultar.
- * - Overlay div encima del iframe → defense in depth, bloquea cualquier
- *   interacción residual aún cuando algún browser ignore pointer-events.
- */
-function DecorativeVideo({
-  videoId,
-  title,
-}: {
-  videoId: string;
-  title: string;
-}) {
-  return (
-    // Aspect ratio fiel al Figma (1731:781 ≈ 2.22:1, mucho más cinematográfico
-    // que 16:9). `max-h-[70vh]` evita que el video crezca más que la pantalla
-    // cuando la card está pinneada — siempre cabe el video completo a la vez.
-    // En viewports muy altos, el max-h gana y el video se centra horizontal,
-    // perdiendo el bleed izquierdo en ese caso (trade-off aceptable).
-    <div className="relative aspect-[1731/781] max-h-[70vh] w-full overflow-hidden rounded-r-section">
-      <iframe
-        src={youtubeEmbedUrl(videoId, { decorative: true })}
-        title={title}
-        allow="autoplay; encrypted-media; picture-in-picture"
-        referrerPolicy="strict-origin-when-cross-origin"
-        // Oversize + negative offsets crop YouTube's residual chrome.
-        className="pointer-events-none absolute top-[-7.5%] left-[-7.5%] h-[115%] w-[115%] border-0"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0"
-      />
-    </div>
   );
 }
 

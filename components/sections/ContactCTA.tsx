@@ -152,7 +152,7 @@ export function ContactCTA() {
     <section
       ref={root}
       aria-label="Get in touch"
-      className="bg-surface-primary px-6 pb-24 sm:px-10 lg:px-16 lg:pb-32"
+      className="rounded-t-section bg-surface-secondary px-6 pt-24 pb-24 sm:px-10 lg:px-16 lg:pt-32 lg:pb-32"
     >
       <div className="mx-auto max-w-2xl">
         <div className="relative p-4">
