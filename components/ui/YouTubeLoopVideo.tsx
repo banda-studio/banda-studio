@@ -85,12 +85,27 @@ interface YouTubeLoopVideoProps {
   videoId: string;
   title: string;
   className?: string;
+  /**
+   * Cuando true, el iframe (y thumbnail) escala 125% en alto centrado
+   * vertical, así un video 16:9 cubre el ancho completo de un wrapper
+   * que sea más ancho que 16:9 (ej. showcase con aspect 2.22:1) sin
+   * dejar barras negras pillarbox a los costados. Se recorta ~12.5% del
+   * top y bottom del video.
+   *
+   * Importante: cuando se usa cover, el wrapper DEBE tener
+   * `[clip-path:inset(0_round_X)]` (donde X matchea el border-radius)
+   * además de overflow-hidden + rounded — sin clip-path los iframes
+   * "escapan" del clipping en Chrome/Safari y los corners se ven
+   * cuadrados.
+   */
+  cover?: boolean;
 }
 
 export function YouTubeLoopVideo({
   videoId,
   title,
   className,
+  cover = false,
 }: YouTubeLoopVideoProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -247,6 +262,14 @@ export function YouTubeLoopVideo({
   });
   const src = `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 
+  // Position/size shared entre thumbnail e iframe. Si las dos clases
+  // no son idénticas, el visible del thumbnail no matchea al del video
+  // y se nota un "salto" en el swap. Con `cover`, escala 125% en alto
+  // centrado para fit-cover del wrapper.
+  const positionClass = cover
+    ? "absolute left-0 top-[-12.5%] h-[125%] w-full"
+    : "absolute inset-0 h-full w-full";
+
   // Tres mecanismos juntos para forzar que el border-radius + overflow
   // del padre clipee al iframe en Chrome/Safari (default sin esto: el
   // iframe vive en su composite layer y "se escapa" del clip, viéndose
@@ -277,14 +300,16 @@ export function YouTubeLoopVideo({
         a `hqdefault.jpg` (480×360, garantizado para todo video).
       */}
       {/*
-        Thumbnail e iframe ambos al tamaño exacto del wrapper (inset-0
-        h-full w-full). Antes tenían un oversize 1.15×1.30 con offsets
-        negativos para crop del watermark residual de YouTube, pero eso
-        causaba dos problemas: (a) el iframe "se escapaba" del rounded
-        clipping del wrapper en Chrome/Safari y se veía con bordes
-        cuadrados, (b) el thumbnail y el video terminaban en tamaños
-        sutilmente distintos. Con ambos al wrapper size, los dos
-        clipean idénticos al `rounded` del wrapper.
+        Thumbnail e iframe usan EXACTAMENTE las mismas clases de
+        position/size para que su área visible matchee al pixel y
+        clipeen igual al border-radius del wrapper.
+
+        - Default (`cover` false): inset-0 h-full w-full → iframe del
+          mismo tamaño que el wrapper. Funciona cuando el aspect del
+          wrapper matchea al del video (ej. service pages con aspect-video).
+        - `cover` true: 125% alto centrado vertical (top:-12.5%) →
+          un video 16:9 dentro de un wrapper más ancho que 16:9 cubre
+          el ancho completo sin pillarbox; se recorta ~12.5% top/bottom.
       */}
       {!hasPlayed && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -309,7 +334,7 @@ export function YouTubeLoopVideo({
             // Ciclon) no tiene `maxresdefault.jpg` (solo `hqdefault.jpg`).
             setThumbSrc(`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`);
           }}
-          className="absolute inset-0 z-10 h-full w-full object-cover"
+          className={`${positionClass} z-10 object-cover`}
         />
       )}
       {hasMounted && (
@@ -319,7 +344,7 @@ export function YouTubeLoopVideo({
           title={title}
           allow="autoplay; encrypted-media; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
-          className={`pointer-events-none absolute inset-0 h-full w-full border-0 transition-opacity duration-300 ${hasPlayed ? "opacity-100" : "opacity-0"}`}
+          className={`pointer-events-none ${positionClass} border-0 transition-opacity duration-300 ${hasPlayed ? "opacity-100" : "opacity-0"}`}
         />
       )}
     </div>

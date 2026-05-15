@@ -151,7 +151,15 @@ export function ServicesShowcase() {
                     <YouTubeLoopVideo
                       videoId={service.videoId}
                       title={`${service.name} — featured work`}
-                      className="relative aspect-[1731/781] max-h-[70vh] w-full overflow-hidden rounded-2xl"
+                      // `cover` + `clip-path:inset(0_round_1rem)` matchea
+                      // rounded-2xl (1rem). El cover escala el iframe 125%
+                      // vertical para que un video 16:9 llene el wrapper
+                      // 2.22:1 sin pillarbox; el clip-path fuerza al
+                      // iframe a respetar los 4 corners redondeados
+                      // (overflow-hidden + rounded solo no alcanza con
+                      // iframes en Chrome/Safari).
+                      cover
+                      className="relative aspect-[1731/781] max-h-[70vh] w-full overflow-hidden rounded-2xl [clip-path:inset(0_round_1rem)]"
                     />
                   </div>
                 </article>
