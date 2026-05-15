@@ -284,12 +284,20 @@ export function YouTubeLoopVideo({
           aria-hidden="true"
           loading="lazy"
           onLoad={(e) => {
+            // Caso A: YouTube devuelve un stub gris 120×90 cuando
+            // `maxresdefault.jpg` no fue generado pero la URL responde 200.
             const img = e.currentTarget;
             if (img.naturalWidth <= 120) {
               setThumbSrc(
                 `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
               );
             }
+          }}
+          onError={() => {
+            // Caso B: el archivo no existe (404) — YouTube ni siquiera
+            // generó el stub. Por ejemplo `Mnq6Lk7Ol24` (Go Power para
+            // Ciclon) no tiene `maxresdefault.jpg` (solo `hqdefault.jpg`).
+            setThumbSrc(`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`);
           }}
           className="absolute top-[-15%] left-[-7.5%] z-10 h-[130%] w-[115%] object-cover"
         />
