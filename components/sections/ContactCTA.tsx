@@ -170,7 +170,7 @@ export function ContactCTA({ primaryCta = "about" }: ContactCTAProps = {}) {
       <div className="mx-auto max-w-2xl">
         <div className="relative p-4">
           {/* Wireframe wrapper — scale 0 → 1, contiene solo las 4 líneas */}
-          <div data-wireframe className="absolute inset-0">
+          <div data-wireframe className="pointer-events-none absolute inset-0">
             <span
               aria-hidden="true"
               className="absolute top-0 right-0 left-0 h-px bg-white"
@@ -269,7 +269,7 @@ function Node({
     <span
       data-node={dataKey}
       aria-hidden="true"
-      className={`absolute size-3 rounded-[2px] bg-white ${placement}`}
+      className={`pointer-events-none absolute size-3 rounded-[2px] bg-white ${placement}`}
     />
   );
 }
