@@ -118,9 +118,12 @@ export function YouTubeLoopVideo({
           setHasMounted(true);
         }
       },
-      // `rootMargin: 300px` → empezamos a cargar 300px antes de que entre
-      // al viewport. Cuando el usuario lo ve, ya está listo (sin spinner).
-      { rootMargin: "300px" },
+      // `rootMargin: 600px` → empezamos a cargar bien antes (~media
+      // pantalla) de que entre al viewport. Cuando el usuario lo ve,
+      // ya está listo (sin spinner). Trade-off: usa más bandwidth en
+      // scrolls largos, pero el bandwidth lo gastamos igual cuando
+      // llega; solo lo movemos antes para que esté listo a tiempo.
+      { rootMargin: "600px" },
     );
     observer.observe(wrapperRef.current);
     return () => observer.disconnect();
