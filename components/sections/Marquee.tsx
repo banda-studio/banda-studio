@@ -28,7 +28,7 @@ export function Marquee() {
       <div className="mx-auto flex w-full max-w-[1440px] items-center gap-10 px-6 sm:px-10 lg:px-16">
         <h2
           id="marquee-title"
-          className="shrink-0 text-subtitle font-normal leading-[1.15]"
+          className="shrink-0 text-body font-normal leading-[1.15] sm:text-subtitle"
         >
           Our
           <br />

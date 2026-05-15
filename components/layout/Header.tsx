@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CONTACT_EMAIL } from "@/lib/services";
 
 import { EmailLink } from "./EmailLink";
+import { MobileMenu } from "./MobileMenu";
 import { NavLink } from "./NavLink";
 import { ServicesDropdown } from "./ServicesDropdown";
 
@@ -47,7 +48,12 @@ export function Header() {
           <ServicesDropdown />
         </nav>
 
-        <EmailLink email={CONTACT_EMAIL} />
+        {/* En desktop muestra el email; en mobile la oculta y aparece el
+            menú hamburguesa que tiene el email adentro. */}
+        <div className="hidden md:block">
+          <EmailLink email={CONTACT_EMAIL} />
+        </div>
+        <MobileMenu />
       </div>
     </header>
   );

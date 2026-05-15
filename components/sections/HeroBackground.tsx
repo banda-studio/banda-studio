@@ -72,15 +72,19 @@ function ParticleField() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Skip en mobile y con reduced-motion.
-    if (window.matchMedia("(max-width: 767px)").matches) return;
+    // Skip solo con reduced-motion. En mobile hacemos un campo más chico
+    // (150 vs 450) — sin mouse no hay interactividad pero el drift bro-
+    // wniano da textura ambiente que en pantallas chicas se nota incluso
+    // mejor que en desktop.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
     // Tuning.
-    const PARTICLE_COUNT = 450;
+    const PARTICLE_COUNT = isMobile ? 150 : 450;
     const REPULSE_RADIUS = 160;
     const REPULSE_FORCE = 0.45;
     // Range amplio de tamaños — partículas tipo "polvo" (radio efectivo

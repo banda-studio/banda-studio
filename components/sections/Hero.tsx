@@ -25,7 +25,7 @@ export function Hero() {
   return (
     <section
       aria-labelledby="hero-title"
-      className="relative isolate flex min-h-screen items-center overflow-hidden rounded-b-section bg-surface-secondary"
+      className="relative isolate flex min-h-[80vh] items-center overflow-hidden rounded-b-section bg-surface-secondary md:min-h-screen"
     >
       <HeroBackground />
 
