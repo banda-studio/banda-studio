@@ -107,6 +107,13 @@ export function YouTubeLoopVideo({
   // muestra brevemente su UI de loading/play (botón central). Mantenemos
   // el iframe en opacity-0 hasta PLAYING para esconder ese flash.
   const [hasPlayed, setHasPlayed] = useState(false);
+  // `thumbSrc` arranca con `maxresdefault.jpg` (1280×720). YouTube no lo
+  // genera para todos los videos — cuando no existe devuelve un stub gris
+  // de 120×90. Si el onLoad detecta esa dimensión, caemos a `hqdefault.jpg`
+  // (480×360) que existe para cualquier video subido.
+  const [thumbSrc, setThumbSrc] = useState(
+    `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
+  );
 
   // IntersectionObserver para detectar entrada/salida del viewport.
   useEffect(() => {
@@ -158,7 +165,11 @@ export function YouTubeLoopVideo({
                   const t = e.target.getCurrentTime?.() ?? 0;
                   const d = e.target.getDuration?.() ?? 0;
                   if (d > 0 && t >= d - 0.4) {
-                    e.target.seekTo(0, true);
+                    // seekTo(0.3) en vez de 0: el frame 0 de un video YT
+                    // suele ser idéntico al thumbnail (YouTube lo genera
+                    // del primer frame). Saltando a 0.3s evitamos que el
+                    // loop "muestre el thumbnail" por un instante.
+                    e.target.seekTo(0.3, true);
                   }
                 } catch {
                   // Ignorable: ocurre durante la transición ready/destroy.
@@ -171,6 +182,15 @@ export function YouTubeLoopVideo({
               // iframe.
               if (e.data === 1) {
                 setHasPlayed(true);
+              } else if (e.data === 0) {
+                // `0` = ENDED. Defense in depth: si el setInterval no
+                // alcanzó a hacer el seek antes del final (main thread
+                // bloqueado, video muy corto, etc.), forzamos el loop
+                // acá. Sin esto YouTube mostraría su UI de "video ended".
+                try {
+                  e.target.seekTo(0.3, true);
+                  e.target.playVideo();
+                } catch {}
               }
             },
           },
@@ -227,21 +247,18 @@ export function YouTubeLoopVideo({
   });
   const src = `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 
-  // Thumbnail placeholder mientras el iframe no se monta. `maxresdefault`
-  // suele ser 1280×720 pero algunos videos lo sirven en source-aspect.
-  // Usamos `object-cover` para llenar el slot sin franjas negras.
-  const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
-
-  // `transform-gpu` (translateZ(0)) fuerza una composite layer propia en
-  // el wrapper para que el border-radius + overflow:hidden clipee al
-  // iframe en Chrome/Safari (sin esto, el iframe ignora el clipping y
-  // los corners se ven cuadrados cuando el iframe entra a opacity 1).
-  // Las clases del usuario via `className` se mergean después, no
-  // pierden prioridad.
+  // Tres mecanismos juntos para forzar que el border-radius + overflow
+  // del padre clipee al iframe en Chrome/Safari (default sin esto: el
+  // iframe vive en su composite layer y "se escapa" del clip, viéndose
+  // cuadrado encima del wrapper redondeado):
+  // - `isolate` → crea stacking context propio.
+  // - `transform-gpu` (translateZ(0)) → fuerza GPU compositing del wrapper.
+  // - `[contain:paint]` → CSS containment del paint output al box del
+  //   wrapper. Es el más bulletproof para este caso.
   return (
     <div
       ref={wrapperRef}
-      className={`${className ?? ""} transform-gpu`}
+      className={`${className ?? ""} isolate transform-gpu [contain:paint]`}
     >
       {/*
         Thumbnail: visible mientras el iframe no haya empezado a reproducir.
@@ -254,14 +271,26 @@ export function YouTubeLoopVideo({
         130% h, 115% w) para que el crop visible matchee exactamente al
         del video. Sin esto, el thumbnail se ve "más zoomeado" que el
         video y al hacer el swap parece que el contenido se achica.
+
+        El onLoad detecta el stub gris 120×90 que YouTube devuelve cuando
+        `maxresdefault.jpg` no existe para ese video — en ese caso caemos
+        a `hqdefault.jpg` (480×360, garantizado para todo video).
       */}
       {!hasPlayed && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={thumbnailUrl}
+          src={thumbSrc}
           alt=""
           aria-hidden="true"
           loading="lazy"
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            if (img.naturalWidth <= 120) {
+              setThumbSrc(
+                `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+              );
+            }
+          }}
           className="absolute top-[-15%] left-[-7.5%] z-10 h-[130%] w-[115%] object-cover"
         />
       )}
