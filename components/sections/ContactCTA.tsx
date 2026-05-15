@@ -36,7 +36,20 @@ gsap.registerPlugin(ScrollTrigger);
  * Reduced motion: estado final directo, sin cursor ni timeline.
  * `once: true` → no replay al hacer scroll-up/down repetido.
  */
-export function ContactCTA() {
+interface ContactCTAProps {
+  /**
+   * Qué CTA secundario mostrar en la fila inferior de la card.
+   * - `"about"` (default): "Learn more about us" → `/about`. Para home y
+   *   service pages, donde el visitante todavía puede querer conocer el
+   *   estudio.
+   * - `"contact"`: "Let's work together" → `/contact`. Para la página
+   *   `/about`, donde "learn more about us" no tiene sentido porque ya
+   *   está acá; el siguiente paso natural es escribirnos.
+   */
+  primaryCta?: "about" | "contact";
+}
+
+export function ContactCTA({ primaryCta = "about" }: ContactCTAProps = {}) {
   const root = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -224,10 +237,12 @@ export function ContactCTA() {
             */}
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
               <Link
-                href="/about"
+                href={primaryCta === "contact" ? "/contact" : "/about"}
                 className="shrink-0 rounded-pill border border-transparent px-5 py-2 text-caption font-medium whitespace-nowrap text-ink-primary transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none [background:linear-gradient(var(--color-surface-secondary),var(--color-surface-secondary))_padding-box,linear-gradient(135deg,var(--color-accent),var(--color-border-fade))_border-box]"
               >
-                Learn more about us
+                {primaryCta === "contact"
+                  ? "Let's work together"
+                  : "Learn more about us"}
               </Link>
               <EmailLink email={CONTACT_EMAIL} compact />
             </div>

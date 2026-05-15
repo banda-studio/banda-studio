@@ -28,7 +28,7 @@ export default function AboutPage() {
       <main className="flex-1">
         <AboutHero />
         <ClientsStrip />
-        <ContactCTA />
+        <ContactCTA primaryCta="contact" />
       </main>
     </>
   );
