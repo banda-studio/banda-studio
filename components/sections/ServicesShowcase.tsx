@@ -159,7 +159,14 @@ export function ServicesShowcase() {
                       // (overflow-hidden + rounded solo no alcanza con
                       // iframes en Chrome/Safari).
                       cover
-                      className="relative aspect-[1731/781] max-h-[70vh] w-full overflow-hidden rounded-2xl [clip-path:inset(0_round_1rem)]"
+                      // Sin `max-h-[70vh]`: ese cap distorsiona el aspect
+                      // ratio en viewports bajos (la altura se cappea pero
+                      // el width sigue al 100%, el wrapper queda más ancho
+                      // que 2.22:1) y rompe el cover-fit del iframe. El
+                      // ancho del wrapper ya está capeado por el max-w del
+                      // container, así que la altura natural del aspect
+                      // no se va a desbordar.
+                      className="relative aspect-[1731/781] w-full overflow-hidden rounded-2xl [clip-path:inset(0_round_1rem)]"
                     />
                   </div>
                 </article>
