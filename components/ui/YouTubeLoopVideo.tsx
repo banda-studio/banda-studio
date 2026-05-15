@@ -232,14 +232,28 @@ export function YouTubeLoopVideo({
   // Usamos `object-cover` para llenar el slot sin franjas negras.
   const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
+  // `transform-gpu` (translateZ(0)) fuerza una composite layer propia en
+  // el wrapper para que el border-radius + overflow:hidden clipee al
+  // iframe en Chrome/Safari (sin esto, el iframe ignora el clipping y
+  // los corners se ven cuadrados cuando el iframe entra a opacity 1).
+  // Las clases del usuario via `className` se mergean después, no
+  // pierden prioridad.
   return (
-    <div ref={wrapperRef} className={className}>
+    <div
+      ref={wrapperRef}
+      className={`${className ?? ""} transform-gpu`}
+    >
       {/*
         Thumbnail: visible mientras el iframe no haya empezado a reproducir.
         Sirve doble propósito: (a) placeholder antes del lazy mount, (b)
         cobertura sobre el iframe mientras YouTube muestra su UI de
         loading/play durante el arranque. Crossfade a transparente cuando
         `hasPlayed` se vuelve true.
+
+        Mismo oversize + offsets que el iframe (-15% top, -7.5% left,
+        130% h, 115% w) para que el crop visible matchee exactamente al
+        del video. Sin esto, el thumbnail se ve "más zoomeado" que el
+        video y al hacer el swap parece que el contenido se achica.
       */}
       {!hasPlayed && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -248,7 +262,7 @@ export function YouTubeLoopVideo({
           alt=""
           aria-hidden="true"
           loading="lazy"
-          className="absolute inset-0 z-10 h-full w-full object-cover"
+          className="absolute top-[-15%] left-[-7.5%] z-10 h-[130%] w-[115%] object-cover"
         />
       )}
       {hasMounted && (
