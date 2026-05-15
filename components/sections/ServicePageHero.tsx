@@ -1,6 +1,7 @@
+import Link from "next/link";
+
 import { LiquidGlass } from "@/components/ui/LiquidGlass";
 import { YouTubeLoopVideo } from "@/components/ui/YouTubeLoopVideo";
-import { CONTACT_EMAIL } from "@/lib/services";
 
 interface ServicePageHeroProps {
   name: string;
@@ -85,12 +86,12 @@ export function ServicePageHero({
             {name}
           </h1>
           <p className="text-body-lg text-white/85">{description}</p>
-          <a
-            href={`mailto:${CONTACT_EMAIL}`}
+          <Link
+            href="/contact"
             className="mt-2 rounded-pill border border-transparent px-6 py-2 text-caption font-medium text-ink-primary transition-opacity hover:opacity-90 [background:linear-gradient(var(--color-surface-secondary),var(--color-surface-secondary))_padding-box,linear-gradient(135deg,var(--color-accent),var(--color-border-fade))_border-box]"
           >
             Let&apos;s work together
-          </a>
+          </Link>
         </LiquidGlass>
       </div>
     </section>

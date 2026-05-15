@@ -4,7 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { services } from "@/lib/services";
+import { serviceDetails, services } from "@/lib/services";
+
+// Filtramos por las que tienen contenido real en `serviceDetails`. Graphic
+// Design y Website siguen declarados en `services` para cuando se sumen
+// piezas, pero hasta entonces no aparecen en el menú (sus rutas darían 404).
+const visibleServices = services.filter((s) => s.slug in serviceDetails);
 
 /**
  * Dropdown de Services del nav.
@@ -111,7 +116,7 @@ export function ServicesDropdown() {
               : "pointer-events-none scale-95 opacity-0"
           }`}
         >
-          {services.map((service) => (
+          {visibleServices.map((service) => (
             <Link
               key={service.slug}
               href={`/services/${service.slug}`}
