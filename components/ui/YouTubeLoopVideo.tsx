@@ -276,6 +276,16 @@ export function YouTubeLoopVideo({
         `maxresdefault.jpg` no existe para ese video — en ese caso caemos
         a `hqdefault.jpg` (480×360, garantizado para todo video).
       */}
+      {/*
+        Thumbnail e iframe ambos al tamaño exacto del wrapper (inset-0
+        h-full w-full). Antes tenían un oversize 1.15×1.30 con offsets
+        negativos para crop del watermark residual de YouTube, pero eso
+        causaba dos problemas: (a) el iframe "se escapaba" del rounded
+        clipping del wrapper en Chrome/Safari y se veía con bordes
+        cuadrados, (b) el thumbnail y el video terminaban en tamaños
+        sutilmente distintos. Con ambos al wrapper size, los dos
+        clipean idénticos al `rounded` del wrapper.
+      */}
       {!hasPlayed && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -299,7 +309,7 @@ export function YouTubeLoopVideo({
             // Ciclon) no tiene `maxresdefault.jpg` (solo `hqdefault.jpg`).
             setThumbSrc(`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`);
           }}
-          className="absolute top-[-15%] left-[-7.5%] z-10 h-[130%] w-[115%] object-cover"
+          className="absolute inset-0 z-10 h-full w-full object-cover"
         />
       )}
       {hasMounted && (
@@ -309,7 +319,7 @@ export function YouTubeLoopVideo({
           title={title}
           allow="autoplay; encrypted-media; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
-          className={`pointer-events-none absolute top-[-15%] left-[-7.5%] h-[130%] w-[115%] border-0 transition-opacity duration-300 ${hasPlayed ? "opacity-100" : "opacity-0"}`}
+          className={`pointer-events-none absolute inset-0 h-full w-full border-0 transition-opacity duration-300 ${hasPlayed ? "opacity-100" : "opacity-0"}`}
         />
       )}
     </div>
