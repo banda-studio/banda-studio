@@ -59,7 +59,7 @@ export function Marquee() {
             {[...marqueeSpecialties, ...marqueeSpecialties].map(
               (specialty, i) => (
                 <Fragment key={i}>
-                  <li className="rounded-tag bg-[#f7f7f7]/[0.73] px-5 py-1.5 text-body-lg font-medium whitespace-nowrap text-ink-on-chip">
+                  <li className="rounded-tag bg-[#f7f7f7]/[0.73] px-3 py-1 text-caption font-medium whitespace-nowrap text-ink-on-chip sm:px-5 sm:py-1.5 sm:text-body-lg">
                     {specialty}
                   </li>
                   {/* Separador: punto chico entre items. aria-hidden porque
