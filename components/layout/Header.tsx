@@ -24,7 +24,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-white/5 bg-surface-secondary/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-8 px-6 py-4 sm:px-10 lg:px-16">
         <Link
-          href="/home"
+          href="/"
           aria-label="Banda Studio — go to home"
           className="shrink-0"
         >
@@ -42,7 +42,7 @@ export function Header() {
           aria-label="Primary"
           className="hidden items-center gap-8 md:flex"
         >
-          <NavLink href="/home">Home</NavLink>
+          <NavLink href="/">Home</NavLink>
           <NavLink href="/about">About Us</NavLink>
           <ServicesDropdown />
         </nav>

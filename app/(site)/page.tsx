@@ -13,6 +13,13 @@ export const metadata: Metadata = {
     "Independent creative studio bringing technical precision to your creative vision. 3D Works, 2D Motion, VFX, Graphic Design and Website.",
 };
 
+/**
+ * Home (`/`). Hero con humo + chips de servicios, showcase scroll-pinned con
+ * los 3 servicios destacados, tagline y card de CTA final.
+ *
+ * Antes vivía en `/home` mientras `/` mostraba una landing de maintenance,
+ * pero ya estamos live — `/` ahora es la home real.
+ */
 export default function HomePage() {
   return (
     <>
@@ -23,7 +30,6 @@ export default function HomePage() {
         <ServicesShowcase />
         <Tagline />
         <ContactCTA />
-        {/* WIP — Footer llega en commit siguiente. */}
       </main>
     </>
   );

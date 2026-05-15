@@ -13,9 +13,9 @@ const monaSans = Mona_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Banda Studio — Coming Soon",
+  title: "Banda Studio — Digital Creative Studio",
   description:
-    "Digital Creative Studio. We bring technical precision to your creative vision. New site under construction.",
+    "Independent creative studio bringing technical precision to your creative vision. 3D Works, 2D Motion, VFX, Graphic Design and Website.",
 };
 
 export default function RootLayout({

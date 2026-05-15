@@ -1,13 +1,11 @@
 import type { MetadataRoute } from "next";
 
 /**
- * Mientras el sitio está en construcción bloqueamos indexación de TODO el dominio.
- * Cuando lance el sitio real, cambiar a:
- *   { userAgent: "*", allow: "/", disallow: "/studio" }
- * para permitir la home pero seguir bloqueando el Studio (no debe estar en Google).
+ * Permitimos crawl/index del sitio público y bloqueamos el Studio de Sanity
+ * (no debe aparecer en Google ni ningún buscador).
  */
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", disallow: "/" },
+    rules: { userAgent: "*", allow: "/", disallow: "/studio" },
   };
 }
