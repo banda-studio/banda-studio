@@ -21,7 +21,11 @@
  */
 export async function getYouTubeAspect(videoId: string): Promise<string> {
   try {
-    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    // El `_v=2` no hace nada en YouTube (ignora params desconocidos) pero
+    // Next cachea fetch por URL exacta — cambiar el param invalida el cache
+    // viejo de detección de aspect ratio (de antes del fix de "largest area").
+    // Si en el futuro hay otro fix similar, incrementar a `_v=3` etc.
+    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}&_v=2`, {
       headers: {
         // UA "real" para que YouTube no nos sirva la versión móvil reducida.
         "User-Agent":
