@@ -34,20 +34,34 @@ export async function getYouTubeAspect(videoId: string): Promise<string> {
 
     const html = await res.text();
 
-    // El adaptiveFormats tiene entries tipo: {"itag":...,"url":"...","width":1920,"height":1080,...}
-    // Buscamos el PRIMER par width/height que NO sea de un thumbnail (que
-    // suelen estar en formatos distintos del JSON).
+    // El HTML tiene MUCHOS pares width/height: thumbnails de varios tamaños
+    // (storyboards, preview, related videos), adaptiveFormats del stream
+    // real, etc. Antes tomábamos el PRIMER match en rango, pero para videos
+    // portrait suele aparecer primero un thumbnail 336×188 (preview 16:9
+    // cropeado del portrait) y eso rompía la detección.
+    //
+    // Heurística mejor: tomar el match con mayor ÁREA. Los streams reales
+    // del video son típicamente 1080p o 2160p (1080×1920, 1920×1080,
+    // 1080×1080 según orientación) — área mucho mayor que cualquier
+    // thumbnail. Eso resuelve consistentemente al stream real del video.
     const matches = [...html.matchAll(/"width":(\d+),"height":(\d+)/g)];
+    let bestW = 0;
+    let bestH = 0;
+    let bestArea = 0;
     for (const m of matches) {
       const w = parseInt(m[1], 10);
       const h = parseInt(m[2], 10);
-      // Filter: ignorar dimensiones muy chicas (thumbnails miniatures) y muy
-      // grandes (placeholders raros).
       if (w >= 256 && h >= 144 && w <= 7680 && h <= 4320) {
-        return `${w}/${h}`;
+        const area = w * h;
+        if (area > bestArea) {
+          bestArea = area;
+          bestW = w;
+          bestH = h;
+        }
       }
     }
 
+    if (bestW && bestH) return `${bestW}/${bestH}`;
     return "16/9";
   } catch {
     return "16/9";
