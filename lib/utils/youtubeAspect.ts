@@ -21,18 +21,19 @@
  */
 export async function getYouTubeAspect(videoId: string): Promise<string> {
   try {
-    // El `_v=2` no hace nada en YouTube (ignora params desconocidos) pero
-    // Next cachea fetch por URL exacta — cambiar el param invalida el cache
-    // viejo de detección de aspect ratio (de antes del fix de "largest area").
-    // Si en el futuro hay otro fix similar, incrementar a `_v=3` etc.
-    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}&_v=2`, {
+    // `cache: "no-store"` fuerza al fetch a no usar el data cache de Next.
+    // Costo: cada build refetchea desde YouTube. Beneficio: nos sacamos de
+    // encima el caching layer mientras debuggeamos por qué el detector
+    // devuelve valores que no aparecen en el HTML real de YouTube.
+    // Después de confirmar la causa raíz, volver a `next: { revalidate: ... }`.
+    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
       headers: {
         // UA "real" para que YouTube no nos sirva la versión móvil reducida.
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
       },
-      next: { revalidate: 86400 },
+      cache: "no-store",
     });
     if (!res.ok) return "16/9";
 
