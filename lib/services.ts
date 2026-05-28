@@ -59,10 +59,18 @@ export type ShowcaseService = (typeof showcaseServices)[number];
  * `sanity/schemas/service.ts` para que la transición sea sin friction.
  */
 /**
- * El aspect ratio NO se hardcodea acá: lo detectamos automáticamente desde el
- * source del video en YouTube vía `getYouTubeAspect()` (scraping del HTML de
- * `watch?v=ID`). Eso devuelve dimensiones reales — 16:9, 9:16, 1:1, 4:5, etc.
- * — sin que tengas que mapear manualmente.
+ * El `aspectRatio` de cada video está HARDCODEADO ("W/H").
+ *
+ * Antes se detectaba en runtime scrapeando `youtube.com/watch?v=ID`, pero
+ * YouTube le sirve a las IPs de datacenter (Vercel) un HTML reducido con
+ * dimensiones de thumbnail en vez del stream real → el aspect salía mal y
+ * la caja del video quedaba más grande que el video. Hardcodeado es
+ * confiable en todos los entornos. Los valores se obtuvieron del
+ * `adaptiveFormats` real de cada video (ver
+ * `node_modules/.cache/probe-aspects.cjs`).
+ *
+ * Cuando se agregue/cambie un video, correr ese script con el nuevo ID y
+ * pegar el aspect acá.
  */
 export const serviceDetails = {
   "3d-modeling": {
@@ -70,18 +78,18 @@ export const serviceDetails = {
     description:
       "High-fidelity modeling, texturing, and lighting for products and brands. From hero shots to full CG campaigns, we deliver photoreal visuals built to print, ship, or run on the web.",
     projects: [
-      { title: "Heel — Hero Shot", videoId: "x9A4X5SwHo0" },
-      { title: "Product Loop", videoId: "Qusi8VAni6Y" },
-      { title: "Materials Study", videoId: "bz8A6TeqZ1U" },
-      { title: "Brand Object", videoId: "nNNoNf_MihA" },
+      { title: "Heel — Hero Shot", videoId: "x9A4X5SwHo0", aspectRatio: "16/9" },
+      { title: "Product Loop", videoId: "Qusi8VAni6Y", aspectRatio: "1/1" },
+      { title: "Materials Study", videoId: "bz8A6TeqZ1U", aspectRatio: "9/16" },
+      { title: "Brand Object", videoId: "nNNoNf_MihA", aspectRatio: "9/16" },
       // `column: "left"` fuerza el video a la columna izquierda overrideando
-      // la lógica automática del aspect ratio. Estos dos tienen aspect ~0.8
-      // (casi cuadrado vertical), que el algoritmo trataría como portrait
-      // → derecha. Acá los queremos a la izquierda.
-      { title: "CG Render 05", videoId: "MjEoFLWOP3g", column: "left" },
-      { title: "CG Render 06", videoId: "wzKmf9MAtSE" },
-      { title: "CG Render 07", videoId: "5Zgm7OjE_bw", column: "left" },
-      { title: "CG Render 08", videoId: "Eky0GzQro54" },
+      // la lógica automática. Estos dos son 4/5 (casi cuadrado vertical),
+      // que el algoritmo trataría como portrait → derecha. Acá los queremos
+      // a la izquierda.
+      { title: "CG Render 05", videoId: "MjEoFLWOP3g", aspectRatio: "4/5", column: "left" },
+      { title: "CG Render 06", videoId: "wzKmf9MAtSE", aspectRatio: "9/16" },
+      { title: "CG Render 07", videoId: "5Zgm7OjE_bw", aspectRatio: "4/5", column: "left" },
+      { title: "CG Render 08", videoId: "Eky0GzQro54", aspectRatio: "9/16" },
     ],
   },
   "2d-motion": {
@@ -89,12 +97,12 @@ export const serviceDetails = {
     description:
       "Animated storytelling and motion design for brands, products, and digital campaigns. We move type, illustration, and identity systems with intention.",
     projects: [
-      { title: "Go Power — Ciclon", videoId: "Mnq6Lk7Ol24" },
-      { title: "Campaign Loop", videoId: "yHweM-ioqP0" },
-      { title: "Identity Motion", videoId: "Vladbv4hErQ" },
-      { title: "Animated Spot", videoId: "LiWhk9dCvGQ" },
-      { title: "Animated Spot 05", videoId: "svH7YqA80-E" },
-      { title: "Animated Spot 06", videoId: "SEpWPbMajGU" },
+      { title: "Go Power — Ciclon", videoId: "Mnq6Lk7Ol24", aspectRatio: "16/9" },
+      { title: "Campaign Loop", videoId: "yHweM-ioqP0", aspectRatio: "1/1" },
+      { title: "Identity Motion", videoId: "Vladbv4hErQ", aspectRatio: "1/1" },
+      { title: "Animated Spot", videoId: "LiWhk9dCvGQ", aspectRatio: "16/9" },
+      { title: "Animated Spot 05", videoId: "svH7YqA80-E", aspectRatio: "1920/916" },
+      { title: "Animated Spot 06", videoId: "SEpWPbMajGU", aspectRatio: "16/9" },
     ],
     // Layout manual por filas. Cada array interno = una fila. Los items
     // dentro de una fila se reparten el ancho proporcionalmente al aspect
@@ -102,7 +110,7 @@ export const serviceDetails = {
     customLayout: [
       ["Mnq6Lk7Ol24", "yHweM-ioqP0"], // landscape + square
       ["Vladbv4hErQ", "LiWhk9dCvGQ"], // square + landscape
-      ["svH7YqA80-E"], // full width
+      ["svH7YqA80-E"], // full width (ultrawide)
       ["SEpWPbMajGU"], // full width
     ],
   },
@@ -111,13 +119,13 @@ export const serviceDetails = {
     description:
       "Photoreal compositing and visual effects that elevate live-action and CG footage. We blend the practical with the impossible — clean, invisible, and shippable.",
     projects: [
-      { title: "Live-Action VFX", videoId: "0bePpPwwF9A" },
-      { title: "Compositing Reel", videoId: "LLo7KiLbGzA" },
-      { title: "Effects Pass", videoId: "kzStbCC9c4g" },
-      { title: "Hybrid Shot", videoId: "aZe1XU8dJuA" },
-      { title: "VFX Sequence 05", videoId: "XPi7zPCg39U" },
-      { title: "VFX Sequence 06", videoId: "0JLKM-JIixM" },
-      { title: "VFX Sequence 07", videoId: "fgtWcMbrnzo" },
+      { title: "Live-Action VFX", videoId: "0bePpPwwF9A", aspectRatio: "16/9" },
+      { title: "Compositing Reel", videoId: "LLo7KiLbGzA", aspectRatio: "9/16" },
+      { title: "Effects Pass", videoId: "kzStbCC9c4g", aspectRatio: "1/1" },
+      { title: "Hybrid Shot", videoId: "aZe1XU8dJuA", aspectRatio: "16/9" },
+      { title: "VFX Sequence 05", videoId: "XPi7zPCg39U", aspectRatio: "9/16" },
+      { title: "VFX Sequence 06", videoId: "0JLKM-JIixM", aspectRatio: "9/16" },
+      { title: "VFX Sequence 07", videoId: "fgtWcMbrnzo", aspectRatio: "9/16" },
     ],
     customLayout: [
       ["0bePpPwwF9A"], // landscape full width

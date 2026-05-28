@@ -49,9 +49,18 @@ export function ServicesShowcase() {
           );
           if (items.length < 2) return;
 
-          // Initial state: first centered, resto off-screen abajo.
-          gsap.set(items, { yPercent: 100 });
-          gsap.set(items[0], { yPercent: 0 });
+          // Estado inicial: la primera card centrada y full; el resto
+          // abajo (yPercent 100), un poco más chicas (scale 0.92) y
+          // transparentes (opacity 0). El scale + opacity dan la sensación
+          // de profundidad/capas en la transición.
+          const SCALE_OUT = 0.92;
+          gsap.set(items, {
+            yPercent: 100,
+            scale: SCALE_OUT,
+            opacity: 0,
+            transformOrigin: "50% 50%",
+          });
+          gsap.set(items[0], { yPercent: 0, scale: 1, opacity: 1 });
 
           const HOLD = 0.75; // 75% del slot es "hold"; 25% es transición.
 
@@ -70,12 +79,18 @@ export function ServicesShowcase() {
 
           // Transiciones entre slides consecutivos. Posición en timeline:
           // slide i empieza a entrar en (i - 0.25), llega a centro en i.
+          // - Saliente: sube (yPercent -100), se achica (scale) y se
+          //   desvanece (opacity 0) → "recede" hacia atrás.
+          // - Entrante: sube a centro (yPercent 0), crece (scale 1) y
+          //   aparece (opacity 1).
           for (let i = 1; i < items.length; i++) {
             const transitionStart = i - (1 - HOLD);
             tl.to(
               items[i - 1],
               {
                 yPercent: -100,
+                scale: SCALE_OUT,
+                opacity: 0,
                 ease: "power2.inOut",
                 duration: 1 - HOLD,
               },
@@ -84,6 +99,8 @@ export function ServicesShowcase() {
               items[i],
               {
                 yPercent: 0,
+                scale: 1,
+                opacity: 1,
                 ease: "power2.inOut",
                 duration: 1 - HOLD,
               },
@@ -104,14 +121,22 @@ export function ServicesShowcase() {
     <section
       ref={root}
       aria-label="Featured services"
-      className="bg-surface-primary"
+      className="flex min-h-screen items-center bg-surface-primary py-8 lg:py-10"
     >
-      {/* overflow-hidden es CRÍTICO: corta las cards que están off-screen. */}
-      <div className="overflow-hidden rounded-section bg-surface-secondary">
-        <div className="flex min-h-screen items-center py-8 lg:py-10">
-          <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-10 lg:px-16">
-            <div className="relative flex flex-col gap-12 motion-safe:lg:grid">
-              {showcaseServices.map((service) => (
+      {/*
+        Card negra FULL-WIDTH (w-full = 100vw, punta a punta). El contenido
+        (los 3 servicios) va centrado en el max-w-[1440px] de adentro.
+
+        overflow-hidden CRÍTICO: clipea las cards off-screen al borde de
+        ESTA card (altura del contenido), no a 100vh. Con la card centrada
+        en la section (min-h-screen), trasladar una slide `yPercent: 100`
+        la saca exactamente un alto-de-card → 100% afuera y clippeada, sin
+        asomar por abajo en pantallas altas.
+      */}
+      <div className="w-full overflow-hidden rounded-section bg-surface-secondary">
+        <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-10 lg:px-16">
+          <div className="relative flex flex-col gap-12 motion-safe:lg:grid">
+            {showcaseServices.map((service) => (
                 <article
                   key={service.slug}
                   data-showcase-item
@@ -171,7 +196,6 @@ export function ServicesShowcase() {
                   </div>
                 </article>
               ))}
-            </div>
           </div>
         </div>
       </div>

@@ -6,7 +6,6 @@ import { ContactCTA } from "@/components/sections/ContactCTA";
 import { ServicePageHero } from "@/components/sections/ServicePageHero";
 import { ServiceProjectGrid } from "@/components/sections/ServiceProjectGrid";
 import { serviceDetails, type ServiceSlug } from "@/lib/services";
-import { getYouTubeAspect } from "@/lib/utils/youtubeAspect";
 
 type Params = { slug: string };
 
@@ -33,16 +32,9 @@ export default async function ServicePage({
   const service = serviceDetails[slug as ServiceSlug];
   if (!service) notFound();
 
-  // Resolver el aspect ratio NATIVO de cada video desde el thumbnail de
-  // YouTube. Promise.all → fetches en paralelo (rápido). Cada uno está
-  // cacheado por Next 1 día, así el primer build es la única vez que pega
-  // a YouTube por video.
-  const projects = await Promise.all(
-    service.projects.map(async (p) => ({
-      ...p,
-      aspectRatio: await getYouTubeAspect(p.videoId),
-    })),
-  );
+  // El aspect ratio de cada proyecto está hardcodeado en `serviceDetails`
+  // (ver comentario allá). Ya no scrapeamos YouTube en runtime.
+  const projects = service.projects;
 
   // Si el servicio define un `customLayout`, lo resolvemos a `rows` con los
   // proyectos completos (con aspect detectado). Si no, el grid auto-
