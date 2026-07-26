@@ -10,6 +10,13 @@
     "lint": "eslint",
     "typegen": "sanity schema extract && sanity typegen generate"
   },
+  "browserslist": [
+    "chrome >= 100",
+    "edge >= 100",
+    "firefox >= 100",
+    "safari >= 15.4",
+    "not dead"
+  ],
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@sanity/client": "^7.22.0",
