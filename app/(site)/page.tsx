@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   // `absolute` evita que el template del root layout ("%s — Banda Studio")
   // le agregue el sufijo: la home ya es el título completo.
   title: { absolute: "Banda Studio — Digital Creative Studio" },
-  description:
-    "Independent creative studio bringing technical precision to your creative vision. 3D Works, 2D Motion, VFX, Graphic Design and Website.",
+  // `description` se hereda del root layout (SITE_DESCRIPTION, ~113 chars) —
+  // no la duplicamos acá para que no quede la versión larga.
   alternates: { canonical: "/" },
 };
 

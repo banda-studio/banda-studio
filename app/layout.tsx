@@ -16,7 +16,7 @@ const monaSans = Mona_Sans({
 });
 
 const SITE_DESCRIPTION =
-  "Independent creative studio bringing technical precision to your creative vision. 3D Works, 2D Motion, VFX, Graphic Design and Website.";
+  "Independent creative studio bringing technical precision to your creative vision — 3D, 2D Motion, VFX, and design.";
 
 export const metadata: Metadata = {
   // Base para resolver URLs relativas (canonical, OG image, etc.) a absolutas.
