@@ -5,17 +5,15 @@ import { useEffect, useRef, useState } from "react";
 /**
  * Background del hero: video de partículas en loop, full-bleed.
  *
- * Reemplazó al campo de partículas Canvas2D + blobs. Se pre-hornean dos
- * recortes del mismo source (9:16) con ffmpeg (ver `/public/hero/`):
- * - **Desktop**: recorte 16:9 (`particles-desktop.mp4`).
- * - **Mobile**: rotado + recorte 4:5 (`particles-mobile.mp4`) — más liviano y
- *   con orientación acorde al hero portrait.
+ * Dos capas:
+ * 1. **Poster `<img>`** — SIEMPRE en el HTML inicial, con `fetchpriority=high`.
+ *    Es el LCP: pinta al instante, es descubrible sin JS, y no arrastra el mp4.
+ * 2. **`<video>`** — se monta SOLO en el cliente, después de que `matchMedia`
+ *    decide el viewport. Así se baja UNA sola versión (desktop 16:9 o mobile
+ *    9:16), no las dos. Antes, renderizar el video en el SSR con `preload=auto`
+ *    hacía que en mobile se bajara también el mp4 de desktop (~5 MB de más).
  *
- * Se sirve UNA sola versión según viewport (matchMedia), no las dos, para no
- * gastar ancho de banda de más en mobile. El `poster` pinta al instante (LCP)
- * mientras el video baja en segundo plano.
- *
- * `prefers-reduced-motion`: no reproduce video — muestra el poster estático.
+ * `prefers-reduced-motion`: no monta el video — queda el poster estático.
  *
  * Todo es decoración → `aria-hidden`. Client Component (matchMedia + control
  * del elemento <video>).
@@ -34,6 +32,9 @@ const SOURCES = {
 type Mode = keyof typeof SOURCES;
 
 export function HeroBackground() {
+  // `mounted` arranca en false → en el SSR y el primer render solo va el
+  // poster. El <video> aparece tras el mount (cliente), con el mode ya resuelto.
+  const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<Mode>("desktop");
   const [reduced, setReduced] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -46,6 +47,7 @@ export function HeroBackground() {
       setReduced(mqReduce.matches);
     };
     update();
+    setMounted(true);
     mqMobile.addEventListener("change", update);
     mqReduce.addEventListener("change", update);
     return () => {
@@ -54,15 +56,14 @@ export function HeroBackground() {
     };
   }, []);
 
-  // `muted` seteado por ref: React tiene un bug conocido donde el atributo
-  // `muted` en JSX no siempre se refleja, y sin muted el autoplay se bloquea.
+  // `muted` por ref (React no siempre refleja el atributo, y sin muted el
+  // autoplay se bloquea). Play explícito por si el browser no arranca solo.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     v.muted = true;
-    // Algunos browsers necesitan un play() explícito tras setear muted.
     void v.play().catch(() => {});
-  }, [mode, reduced]);
+  }, [mode, mounted]);
 
   const { src, poster } = SOURCES[mode];
 
@@ -71,16 +72,23 @@ export function HeroBackground() {
       aria-hidden="true"
       className="absolute inset-0 -z-10 overflow-hidden bg-surface-primary"
     >
-      {reduced ? (
-        <div
-          className="h-full w-full bg-cover bg-center"
-          style={{ backgroundImage: `url(${poster})` }}
-        />
-      ) : (
+      {/* Poster (LCP): en el HTML inicial, alta prioridad, sin lazy. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={poster}
+        alt=""
+        fetchPriority="high"
+        decoding="async"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+
+      {/* Video: solo en cliente y si no hay reduced-motion. Se baja una sola
+          versión (la del viewport activo). */}
+      {mounted && !reduced && (
         <video
           key={mode}
           ref={videoRef}
-          className="h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
           src={src}
           poster={poster}
           autoPlay
@@ -91,8 +99,7 @@ export function HeroBackground() {
         />
       )}
 
-      {/* Overlay para mantener el contraste del texto del hero sobre el
-          video. Sutil: más oscuro arriba-izquierda (donde va el título). */}
+      {/* Overlay para el contraste del texto del hero. */}
       <div className="absolute inset-0 bg-gradient-to-br from-surface-primary/55 via-surface-primary/15 to-surface-primary/40" />
     </div>
   );
