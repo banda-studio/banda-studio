@@ -67,16 +67,16 @@ export default function RootLayout({
     >
       <head>
         {/*
-          Preconnect a los dominios de YouTube. Sin esto, el browser hace
-          DNS lookup + TLS handshake en el momento que monta el primer
-          <iframe>, agregando ~200-500ms de latencia antes de que llegue
-          el primer byte del video. Con preconnect, esos round-trips se
-          hacen en paralelo con el resto del HTML/CSS.
+          Hints para los dominios de YouTube. YouTube solo se usa
+          below-the-fold (showcase desktop + service pages) y lazy, así que
+          preconnectar muchos orígenes al load deja conexiones sin usar y
+          Lighthouse lo marca ("más de 4 preconnect").
 
-          - youtube-nocookie.com: origen del iframe (HTML del player).
-          - i.ytimg.com: thumbnails que usamos como placeholder.
-          - s.ytimg.com: assets/scripts del player (IFrame API).
-          - googlevideo.com: CDN real donde vive el .mp4/.m4s del video.
+          - Solo los 2 críticos como `preconnect` (handshake completo):
+            youtube-nocookie.com (iframe) e i.ytimg.com (thumbnails), que son
+            lo primero que pide el player.
+          - El resto como `dns-prefetch` (solo resuelve DNS, mucho más barato):
+            s.ytimg.com (scripts) y googlevideo.com (CDN del video).
         */}
         <link
           rel="preconnect"
@@ -88,16 +88,7 @@ export default function RootLayout({
           href="https://i.ytimg.com"
           crossOrigin="anonymous"
         />
-        <link
-          rel="preconnect"
-          href="https://s.ytimg.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://www.google.com"
-          crossOrigin="anonymous"
-        />
+        <link rel="dns-prefetch" href="https://s.ytimg.com" />
         <link rel="dns-prefetch" href="https://googlevideo.com" />
       </head>
       <body
