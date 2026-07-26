@@ -26,13 +26,14 @@
 | Lenguaje | **TypeScript** | Strict mode. Tipos auto-generados desde Sanity con `@sanity/typegen`. |
 | CMS | **Sanity** | Studio embebido en `/studio`. No evaluamos Payload — Sanity alcanza y sobra. |
 | Estilos | **Tailwind CSS v4** | **Config CSS-first**. Tokens en `app/globals.css` dentro de `@theme inline { ... }`. **No existe `tailwind.config.ts`** en este proyecto. |
-| Animación | **Framer Motion** | Para microinteracciones, fade-ins on scroll, page transitions. |
-| Hero 3D | **@splinetool/react-spline** | Lazy-loaded. Fallback en mobile / `prefers-reduced-motion`. |
+| Animación | **GSAP** (`@gsap/react` + ScrollTrigger) | Scroll-pin del showcase, reveal on-scroll (`components/ui/Reveal.tsx`), wireframe-draw del ContactCTA. NO usamos Framer Motion. |
+| Hero background | **Video self-hosted** en loop (`/public/hero`) | Reemplazó a las partículas Canvas2D. 16:9 desktop / 9:16 mobile, poster-first LCP, fallback estático en `prefers-reduced-motion`. Ver §5. |
+| Analytics | **Vercel Analytics + Speed Insights** | `<Analytics/>` + `<SpeedInsights/>` en el root layout. Solo emiten en el deploy de Vercel. |
 | Iconos | **lucide-react** | Solo si hace falta algo simple. |
 | Tipografía | **Mona Sans** | Vía `next/font/google`, expuesta como CSS var `--font-mona-sans`. Pesos: Regular, Medium, SemiBold. |
 | Package manager | **pnpm** | Más rápido, ahorra disco, soporte nativo en Vercel. |
-| Hosting | **Vercel** (free tier) | Sin Cloudflare en el medio — Vercel ya tiene CDN. Dominio apunta directo. |
-| Email (form contacto) | **Resend** o **Formspree** | A decidir cuando lleguemos al form. |
+| Hosting | **Vercel** (free tier) | CDN propio de Vercel. Deploy auto desde `main`. Dominio productivo: **`www.bandastudio.tv`** (DNS en Namecheap). |
+| Email (form contacto) | **Resend** | Decidido y en uso. Dominio `bandastudio.tv` verificado; el form envía desde `hello@bandastudio.tv`. |
 | Repo | **GitHub** | `banda-studio/banda-studio`. |
 
 ### Cosas que NO usamos (importante)
@@ -119,9 +120,10 @@ Los dos tokens fluidos (`text-hero`, `text-tagline`) ya escalan en mobile vía `
 
 | Ruta | Tipo | Notas |
 |---|---|---|
-| `/` | Home | Hero con partículas Spline, lista horizontal de servicios, showcase de servicio destacado, tagline, CTA "Have an idea?" |
-| `/about` | Estática | About Us. Copy hardcoded por ahora. |
-| `/services/[slug]` | Dinámica | Una por servicio. Frame "Interna" del Figma. |
+| `/` | Home | Hero con **video de fondo** (partículas), marquee de specialties, showcase scroll-pinned, tagline, ContactCTA. Es la home real (ya no hay landing de maintenance). |
+| `/about` | Estática | `AboutHero` (copy hardcoded) + `ClientsStrip` (logos) + ContactCTA. |
+| `/contact` | Estática | `ContactHero` con form (`ContactForm` → `POST /api/contact` vía Resend). |
+| `/services/[slug]` | Dinámica (SSG) | Una por servicio. Frame "Interna" del Figma. |
 | `/work/[slug]` | Dinámica (futura) | Proyectos individuales. Definir cuando lleguemos. |
 
 ### Contenido dinámico (editable desde Sanity)
@@ -138,35 +140,40 @@ Los dos tokens fluidos (`text-hero`, `text-tagline`) ya escalan en mobile vía `
 
 ### Hosting de videos
 
-- **Ahora:** YouTube con embed limpio → `youtube-nocookie.com` + `?rel=0&modestbranding=1&showinfo=0`.
-- **Después:** Vimeo Standard ($12/mes) — sin branding, dominio restringido a `banda.studio`.
-- **Schema en Sanity:** campo `videoUrl` flexible con detección automática de plataforma (YouTube/Vimeo). Sin cambio de código al migrar.
+Estrategia mixta (decidida jul-2026):
+
+- **Home (hero + showcase):** **self-hosted** en `/public`. Es la página más vista → priorizamos calidad, loop limpio, cero branding. Se pre-hornean con ffmpeg (16:9 desktop / 9:16 mobile, comprimidos, sin audio, poster para LCP). Hero en `/public/hero`, showcase en `/public/showcase`. Excepción: el desktop de 3D y 2D del showcase sigue en YouTube.
+- **Páginas internas (`/services/[slug]`):** **YouTube** (`youtube-nocookie.com`, embed limpio vía `YouTubeLoopVideo`). Son grids de 6-8 videos → el lazy-load de YouTube conviene y evita meter decenas de MB al repo.
+- **Si la compresión no alcanza:** subir los originales a **Cloudflare R2** (egress gratis) y cambiar solo el `src` en `lib/services.ts` — el componente no cambia.
+- **Aspect ratios (YouTube):** **hardcodeados** en `serviceDetails` (`"W/H"`). Antes se scrapeaban en runtime pero YouTube sirve HTML reducido a IPs de datacenter (Vercel) → salía mal. Para un video nuevo, correr `node_modules/.cache/probe-aspects.cjs` con el ID desde una IP residencial y pegar el valor.
 
 ---
 
-## 5. Hero con partículas
+## 5. Hero (video de fondo)
 
-**Estilo:** Partículas reactivas al mouse, estética humo/fluido. Alineado al header image del Figma.
-**Implementación:** Spline embed vía `@splinetool/react-spline`, lazy-loaded.
+**Estilo:** partículas en movimiento, estética humo/fluido. Alineado al header image del Figma.
 
-**Por qué Spline y no shader custom:**
-- Tiempo de dev: días vs. 1-2 semanas.
-- Se ve idéntico a las refs validadas.
-- Banda es a pulmón → priorizamos salir online sobre perfección técnica.
+**Historia:** arrancó como idea de Spline → se implementó como campo de partículas Canvas2D reactivas al mouse → **hoy es un video de fondo en loop** (partículas renderizadas, sin interactividad). Ni Spline ni Three.js siguen en el proyecto.
 
-### Contenido sobre las partículas
+**Implementación actual** (`components/sections/HeroBackground.tsx`, client):
+- Video self-hosted en `/public/hero`, pre-horneado con ffmpeg desde un source 9:16:
+  - **Desktop:** `particles-desktop.mp4` — rotado a **16:9** (1920×1080), así se ve nítido a resolución nativa.
+  - **Mobile:** `particles-mobile.mp4` — **9:16** (720×1280).
+- Se sirve **una sola versión** según viewport (matchMedia), no las dos.
+- `poster` (primer frame) pinta al instante → no rompe el LCP; el video baja en segundo plano.
+- `muted` seteado por ref (el atributo JSX no siempre se refleja y sin muted el autoplay se bloquea).
+- **`prefers-reduced-motion`:** no reproduce video, muestra el poster estático.
+- Overlay `bg-gradient` sutil encima para el contraste del texto.
 
-- Badge "High-End" rotado `-3.82deg`.
+### Contenido sobre el video
+
+- Badge "High-End" rotado `-3.82deg` (chip LiquidGlass).
 - Título: "Digital Creative Studio".
 - Subheader: "We bring technical precision to your creative vision".
-- Botón CTA: "Let's work together!".
-- Nav header.
+- CTA: "Let's work together!" — **glass translúcido** (`bg-white/10` + backdrop-blur) con hover notorio (borde accent + glow), para que el video se vea a través.
+- El contenido entra con un `Reveal` (fade + blur + slide, stagger).
 
-### Performance
-
-- **Lazy load** de la escena Spline (no se carga en initial load).
-- **Mobile + `prefers-reduced-motion`:** fallback a imagen estática (en `/public/fallback/`).
-- **Prioridad:** no destruir el LCP. Si Spline pesa el inicio, lo movemos a `<Suspense>` con un placeholder y se carga después del paint.
+**Si querés bajar el peso del video:** subir crf en el comando ffmpeg o acortar el loop (`-t`). Los mp4 viven en el repo (~8 MB entre las 2 versiones); si escalara mucho, mover a R2.
 
 ---
 
@@ -204,8 +211,9 @@ Los dos tokens fluidos (`text-hero`, `text-tagline`) ya escalan en mobile vía `
   sanity.config.ts
 
 /public
-  /fallback             # imagen estática del hero para mobile
-  /favicons
+  /hero                 # video de fondo del hero (desktop 16:9 + mobile 9:16) + posters
+  /showcase             # videos self-hosted del ServicesShowcase (mobile + VFX desktop) + posters
+  logo.svg
 
 /.claude
   /skills               # skills project-specific (versionadas, parte del repo)
@@ -240,7 +248,7 @@ pnpm-lock.yaml
 - `docs:` documentación (incluye este archivo)
 
 Ejemplos:
-- `feat(hero): add Spline particles with mobile fallback`
+- `feat(hero): add looping background video with mobile fallback`
 - `fix(sanity): correct project schema reference to service`
 - `style(services-list): tighten chip spacing on mobile`
 
@@ -262,7 +270,7 @@ import { client } from '@/lib/sanity/client'
 
 ### Componentes
 
-- Default a **Server Component**. Marcar `'use client'` solo si hace falta state, efectos, listeners, o uso de Framer Motion / Spline.
+- Default a **Server Component**. Marcar `'use client'` solo si hace falta state, efectos, listeners, GSAP, o control de un `<video>`/matchMedia.
 - Props tipadas explícitamente. Nada de `any`.
 - Un componente por archivo. Si es muy chico y privado a otro, está bien co-locarlo.
 
@@ -300,33 +308,46 @@ import { client } from '@/lib/sanity/client'
 
 ## 9. Decisiones pendientes (a resolver cuando lleguemos)
 
-- [ ] Form de contacto: Resend vs. Formspree.
 - [ ] Estructura final de `/work/[slug]` (¿hace falta o alcanza con services?).
 - [ ] Estrategia de revalidación de Sanity: webhook a Vercel vs. ISR con tag-based revalidation. *(La skill `nextjs-sanity-stack` recomienda combinar ambas.)*
-- [ ] Migración a Vimeo (Pro) o hosting propio para calidad de video garantizada — actualmente YouTube embed funciona pero hace throttling de quality cuando hay varios videos en pantalla.
-- [ ] Pulir cubo 3D del hero (paused) — ver §10.
 - [ ] Cargar contenido en Sanity y cambiar a fetch dinámico (hoy todo está hardcoded en `lib/services.ts`).
 - [ ] Imágenes hero por servicio (hoy hero del service usa el primer video del grid como fondo).
+- [ ] Redes sociales: cargar los links (hoy `sameAs` del JSON-LD en `app/layout.tsx` está vacío; el estudio todavía no las trabaja).
+- [ ] Si la compresión de los videos self-hosted no convence: subir originales a Cloudflare R2 (egress gratis) y apuntar los `src`.
+
+### Decididas (ya no pendientes)
+
+- ✅ **Form de contacto:** Resend. Dominio `bandastudio.tv` verificado, envía desde `hello@bandastudio.tv`. Anti-spam por honeypot.
+- ✅ **Cubo 3D del hero:** descartado. Se removió Three.js/@react-three; el hero es video. (Recuperable del historial si se retoma en una V2.)
+- ✅ **Video de la home:** self-hosted (ver §4 → Hosting de videos).
 
 ---
 
 ## 10. Estado del proyecto
 
-**Etapa actual:** Home completa con todas las secciones, 3 páginas internas de servicios funcionando (`/services/3d-modeling`, `/services/2d-motion`, `/services/vfx`), todo en pre-render estático. Deployado a Vercel (https://banda-studio.vercel.app). Dominio `banda.studio` en proceso de transferencia de Wix → Namecheap.
+**Etapa actual:** **sitio live en producción** — **https://www.bandastudio.tv** (deploy auto desde `main` en Vercel; el sin-www redirige a www). Home + About + Contact + 3 páginas de servicio, todo pre-render estático. SEO y analytics puestos. `robots.txt` permite indexación (solo bloquea `/studio`).
 
 ### Lo que está hecho
 
 **Páginas:**
-- `/` — Landing de maintenance ("Coming soon"). `robots.txt` bloquea indexación de todo el sitio durante la construcción.
-- `/home` — Home completa (ver secciones abajo).
-- `/services/3d-modeling` | `/services/2d-motion` | `/services/vfx` — pre-generadas vía `generateStaticParams`. Las páginas para Graphic Design y Website están en el código pero comentadas hasta que haya piezas.
+- `/` — Home real (ya no hay landing de maintenance). Ver secciones abajo.
+- `/about` — `AboutHero` + `ClientsStrip` + ContactCTA.
+- `/contact` — `ContactHero` con form (`ContactForm` → `POST /api/contact` vía Resend).
+- `/services/3d-modeling` | `/services/2d-motion` | `/services/vfx` — pre-generadas vía `generateStaticParams`. Graphic Design y Website están declaradas en `services` pero sin página hasta que haya piezas (el `ServicesDropdown` las oculta para no dar 404).
 - `/studio` — Sanity Studio embebido (cliente listo, sin contenido cargado).
+
+**SEO / infra:**
+- Metadata completa: `metadataBase`, Open Graph + Twitter cards, canonicals por página, title template `%s — Banda Studio`.
+- OG images dinámicas (`app/opengraph-image.tsx` + una por servicio en `services/[slug]/opengraph-image.tsx`), `sitemap.ts`, `manifest.ts`, JSON-LD `Organization` (con `sameAs` vacío hasta cargar redes), `theme-color`.
+- `SITE_URL` en `lib/services.ts` = `https://www.bandastudio.tv` (single source of truth de dominio). **Ojo:** `banda.studio` NO es este sitio (resuelve a un Squarespace ajeno) — el dominio real es `bandastudio.tv`.
+- Vercel Analytics + Speed Insights en el root layout.
+- `.vercelignore` excluye `.claude` + docs del deploy (no afectan build ni se sirven).
 
 **Secciones de la home (en orden):**
 1. `Header` (sticky, glass blur) con dropdown de Services + EmailLink con copy-to-clipboard.
-2. `Hero` — título con chip "High-End" inline + bajada + CTA pill. Background: `HeroBackground` con blobs CSS + campo de 450 partículas Canvas2D reactivas al mouse.
-3. `Marquee` — banda horizontal con 8 specialties duplicadas en loop infinito (pause on hover, respeta `prefers-reduced-motion`).
-4. `ServicesShowcase` — sección scroll-pinned estilo Lusion con GSAP ScrollTrigger. Crossfade entre los 3 servicios con video disponible (3D, 2D Motion, VFX). Cada servicio: título + descripción + "More Works" + video.
+2. `Hero` — título con chip "High-End" inline + bajada + **CTA glass** (translúcido, hover con borde accent + glow). Background: `HeroBackground` = **video de partículas en loop** self-hosted (16:9 desktop / 9:16 mobile). El contenido entra con `Reveal`. Ver §5.
+3. `Marquee` — banda horizontal con 8 specialties duplicadas en loop infinito (pause on hover, `prefers-reduced-motion`). El set duplicado va con `aria-hidden` para que el lector de pantalla las lea una sola vez.
+4. `ServicesShowcase` — sección scroll-pinned estilo Lusion (GSAP ScrollTrigger). Crossfade entre 3D / 2D Motion / VFX. Videos **responsive**: 16:9 desktop / 9:16 mobile. VFX + todos los mobile son self-hosted (`/public/showcase`, componente `LoopVideo` con IntersectionObserver); 3D y 2D en desktop siguen en YouTube. Se renderiza solo la versión del viewport activo.
 5. `Tagline` — frase grande "Whatever you're building, we'd love to be part of it.".
 6. `ContactCTA` — card con animación "wireframe drag" (cursor dibuja la caja desde una esquina) usando GSAP. Adentro: título "Have an [idea?] Let's work together!" (idea? con chip glass + rotación + italic) + descripción + "Learn more about us" pill + email.
 
@@ -345,9 +366,15 @@ import { client } from '@/lib/sanity/client'
 - `LiquidGlassFilter` — SVG filter montado una vez en `app/layout.tsx`. Define `#liquid-glass` con `feImage` (WebP displacement map base64 en `lib/liquidGlassDisplacementMap.ts`) + `feGaussianBlur` + `feDisplacementMap`.
 - `YouTubeLoopVideo` — embed de YouTube decorativo. Loop vía YouTube IFrame API (no usa `loop=1&playlist` que dispara los controles ⏮ ⏸ ⏭). Lazy mount con IntersectionObserver (rootMargin 300px) + `pauseVideo()` cuando sale del viewport para no saturar la red.
 
-**Detección automática de aspect ratio:**
-- `lib/utils/youtubeAspect.ts` scrapea el HTML de `youtube.com/watch?v=ID` y extrae width/height de los `adaptiveFormats` JSON embebido. Devuelve `"W/H"` (ej: `"640/360"`, `"360/640"`). Cached por Next 1 día via `next: { revalidate: 86400 }`.
-- Se invoca en `app/(site)/services/[slug]/page.tsx` antes de pasar a `ServiceProjectGrid`.
+**Componentes nuevos (además de los de arriba):**
+- `Reveal` (`components/ui/Reveal.tsx`) — reveal on-scroll (fade + blur + slide) vía GSAP, con modo `stagger`. Usado en Hero, Marquee, Tagline.
+- `Footer` (`components/layout/Footer.tsx`) — crédito minimal ("Made by Banda Studio · año") al pie de las rutas públicas, vía `app/(site)/layout.tsx`.
+- `ContactForm` (`components/forms/`) — form del `/contact` con honeypot anti-spam.
+- `not-found.tsx` — 404 branded.
+- `LoopVideo` (dentro de `ServicesShowcase`) — `<video>` self-hosted en loop con IntersectionObserver.
+
+**Aspect ratios de videos (YouTube):**
+- **Hardcodeados** en `serviceDetails` (`aspectRatio: "W/H"`). El scraping en runtime se abandonó (YouTube sirve HTML reducido a IPs de datacenter → salía mal). Para un video nuevo, correr `node_modules/.cache/probe-aspects.cjs` desde IP residencial y pegar el valor.
 
 **Design system aplicado:**
 - Tokens en `app/globals.css` (`@theme`): colors (`surface-primary/secondary`, `ink-primary/on-chip`, `accent`, `border-fade`, `glass-light/dark`), border-radius (`pill`, `tag`, `section`), font sizes (`hero`, `tagline`, `title`, `subtitle`, `body-lg`, `body`, `caption`), Mona Sans.
@@ -355,23 +382,18 @@ import { client } from '@/lib/sanity/client'
 - Tipografía afinada en una segunda pasada (mayo 2026): nav/email/CTAs bajados de `text-body-lg` (19px) y `text-body` (18px) a `text-caption` (16px) `font-medium`. Marquee chips bajados de 25px → 19px.
 
 **Performance / animaciones:**
-- GSAP (`@gsap/react` + ScrollTrigger) — usado en ServicesShowcase (scroll-pin) y ContactCTA (wireframe-draw).
-- Particles Canvas2D — 450 partículas, clearRect cada frame (no trails que se acumulan), reactivas al mouse con repulsión.
-- Tres.js + R3F + drei están instaladas (cubo 3D paused para V2). Si las querés sacar para reducir bundle, `pnpm remove three @react-three/fiber @react-three/drei` — el archivo `components/sections/HeroForeground.tsx` y `GlassCube.tsx` siguen en disco como referencia.
+- GSAP (`@gsap/react` + ScrollTrigger) — ServicesShowcase (scroll-pin), ContactCTA (wireframe-draw), `Reveal` (entrada on-scroll).
+- Hero: video de fondo (ver §5). Ya **no** hay partículas Canvas2D ni blobs CSS.
+- Three.js / R3F / drei: **removidos** del proyecto (junto con el cubo 3D) para aligerar el bundle. `@next/bundle-analyzer` disponible → `pnpm analyze` abre el treemap del bundle.
 
-### Lo que está paused
+### Removido (recuperable del historial)
 
-**Cubo 3D del hero (HeroForeground / GlassCube)**:
-- Three.js + R3F + drei + meshPhysicalMaterial con iridescence + dispersion + clearcoat.
-- Sigue el mouse, rota lento, vidrio iridiscente con split RGB en los bordes.
-- En dev tiene issues recurrentes de WebGL context-lost (strict mode + Canvas remount). En producción debería andar bien.
-- **NO se renderiza ahora**: `<HeroForeground />` está comentado en `Hero.tsx`. Para retomarlo: descomentar el import y la línea.
-- Decisión: el efecto no terminó de gustar; se va a retrabajar en una "V2" / segunda landing más adelante.
+**Cubo 3D del hero (HeroForeground / GlassCube)** — Three.js + R3F + drei + `meshPhysicalMaterial` iridiscente que seguía el mouse. Nunca terminó de gustar; se removió junto con las deps de Three.js. Si se retoma en una V2: recuperar los archivos del historial (`git show <sha>:components/sections/GlassCube.tsx`, ver el comentario en `Hero.tsx` con los paths exactos) y reinstalar `three @react-three/fiber @react-three/drei @types/three`.
 
 ### Decisiones técnicas tomadas
 
 1. **YouTube vs Vimeo**: arrancamos con YouTube (free) usando un helper que ya parsea ID y construye URLs limpias (`lib/utils/youtubeEmbed.ts`). Cuando haya presupuesto, migrar a Vimeo Pro — el schema de Sanity y los helpers ya están diseñados para soportar ambas plataformas.
-2. **Aspect ratios de los videos**: NO se hardcodean. Se detectan en build time scrapeando el HTML del video. Si el detect falla devuelve `"16/9"` como fallback.
+2. **Aspect ratios de los videos**: **hardcodeados** en `serviceDetails` (`"W/H"`). El scraping en runtime se abandonó — YouTube sirve HTML reducido a las IPs de datacenter (Vercel) y el aspect salía mal. Ver §4 → Hosting de videos.
 3. **`column: "left" | "right"`** opcional por proyecto: override manual del auto-distribute cuando un video "casi-cuadrado" (~0.8) debe ir a una columna específica.
 4. **`customLayout: string[][]`** opcional por servicio: override completo del auto-distribute con filas manuales. Cada fila se renderiza como flex-row con `flex: aspectRatio 1 0` por item → heights matchean.
 5. **LiquidGlass tone="subtle"** sin SVG displacement: el WebP displacement map tiene forma de pill bakeada — sobre boxes rectangulares grandes proyectaba una "lente fantasma". En `subtle` se skipea el `url()` y queda blur+saturate limpio.
@@ -379,14 +401,14 @@ import { client } from '@/lib/sanity/client'
 
 ### Próximos pasos sugeridos
 
-1. **Footer** — todavía no existe. Logo + links sociales + copyright. Probablemente sale del próximo frame del Figma.
-2. **`/about` page** — copy hardcoded del estudio.
-3. **Form de contacto** — Resend o Formspree.
-4. **Contenido en Sanity** — cargar 3-5 services + 2-3 projects en el Studio, cambiar `serviceDetails` hardcoded por fetch contra `serviceBySlugQuery`.
-5. **Imágenes hero por servicio** — reemplazar el video-como-fondo del ServicePageHero por una pieza específica diseñada para hero.
-6. **Vercel custom domain** — apenas termine la transferencia de Wix → Namecheap.
-7. **Retomar cubo 3D** en una V2 (decisión de Jor).
+1. **Contenido en Sanity** — cargar services + projects en el Studio, cambiar `serviceDetails` hardcoded por fetch contra `serviceBySlugQuery`.
+2. **Redes sociales** — cargarlas y completar el `sameAs` del JSON-LD (`app/layout.tsx`) + un bloque de links (¿en el footer?).
+3. **Imágenes hero por servicio** — reemplazar el video-como-fondo del `ServicePageHero` por una pieza específica diseñada para hero.
+4. **`/work/[slug]`** — evaluar si hace falta (case studies por proyecto) o alcanza con las service pages.
+5. **Footer** — hoy es solo el crédito; si el Figma trae uno más completo (links, redes), ampliarlo.
+
+*(Ya hechos: home live, `/about`, `/contact` + form Resend, SEO, analytics, footer-crédito, 404, dominio productivo `bandastudio.tv`.)*
 
 ---
 
-*Última actualización: mayo 2026.*
+*Última actualización: julio 2026.*
