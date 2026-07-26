@@ -8,9 +8,12 @@ import { ServicesShowcase } from "@/components/sections/ServicesShowcase";
 import { Tagline } from "@/components/sections/Tagline";
 
 export const metadata: Metadata = {
-  title: "Banda Studio — Digital Creative Studio",
+  // `absolute` evita que el template del root layout ("%s — Banda Studio")
+  // le agregue el sufijo: la home ya es el título completo.
+  title: { absolute: "Banda Studio — Digital Creative Studio" },
   description:
     "Independent creative studio bringing technical precision to your creative vision. 3D Works, 2D Motion, VFX, Graphic Design and Website.",
+  alternates: { canonical: "/" },
 };
 
 /**

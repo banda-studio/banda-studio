@@ -4,9 +4,11 @@ import { Header } from "@/components/layout/Header";
 import { ContactHero } from "@/components/sections/ContactHero";
 
 export const metadata: Metadata = {
-  title: "Contact — Banda Studio",
+  // Solo la parte corta: el template del root layout agrega "— Banda Studio".
+  title: "Contact",
   description:
     "Tell us what you have in mind. Post-production, 2D & 3D animation, design, modeling, and VFX for brands around the world.",
+  alternates: { canonical: "/contact" },
 };
 
 /**

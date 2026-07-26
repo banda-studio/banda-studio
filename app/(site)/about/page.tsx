@@ -6,9 +6,11 @@ import { ClientsStrip } from "@/components/sections/ClientsStrip";
 import { ContactCTA } from "@/components/sections/ContactCTA";
 
 export const metadata: Metadata = {
-  title: "About — Banda Studio",
+  // Solo la parte corta: el template del root layout agrega "— Banda Studio".
+  title: "About",
   description:
     "Post-production studio based in Argentina. 2D & 3D animation, design, modeling, and VFX for brands around the world.",
+  alternates: { canonical: "/about" },
 };
 
 /**

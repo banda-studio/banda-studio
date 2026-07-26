@@ -20,8 +20,16 @@ export type Service = (typeof services)[number];
 /**
  * Datos del showcase scroll-pinned de la home. Por ahora solo los 3 servicios
  * que tienen video disponible — Graphic Design y Website se suman cuando haya
- * pieza. `videoId` es el ID de YouTube; el embed se construye con el helper
- * `youtubeEmbedUrl` en `lib/utils/youtubeEmbed.ts`.
+ * pieza.
+ *
+ * Cada servicio tiene dos fuentes de video:
+ * - `desktop` (16:9): YouTube (`kind: "youtube"`) o self-hosted
+ *   (`kind: "video"`, archivo en `/public/showcase`).
+ * - `mobile` (9:16): siempre self-hosted (recorte vertical de la pieza).
+ *
+ * Los self-hosted viven en `/public/showcase/*.mp4`. Si se migran a Cloudflare
+ * R2 (calidad original, egress gratis), solo cambia el string de `src`/`poster`
+ * a la URL de R2 — el componente no cambia.
  */
 export const showcaseServices = [
   {
@@ -29,21 +37,28 @@ export const showcaseServices = [
     name: "3D Works",
     description:
       "High-fidelity modeling, texturing, and lighting for products and brands.",
-    videoId: "x9A4X5SwHo0",
+    desktop: { kind: "youtube", videoId: "x9A4X5SwHo0" },
+    mobile: { src: "/showcase/3d-mobile.mp4", poster: "/showcase/3d-mobile.jpg" },
   },
   {
     slug: "2d-motion",
     name: "2D Motion",
     description:
       "Animated storytelling and motion design for brands, products, and digital campaigns.",
-    videoId: "Mnq6Lk7Ol24",
+    desktop: { kind: "youtube", videoId: "avFnQ1Onq1w" },
+    mobile: { src: "/showcase/2d-mobile.mp4", poster: "/showcase/2d-mobile.jpg" },
   },
   {
     slug: "vfx",
     name: "VFX",
     description:
       "Photoreal compositing and visual effects that elevate live-action and CG footage.",
-    videoId: "0bePpPwwF9A",
+    desktop: {
+      kind: "video",
+      src: "/showcase/vfx-desktop.mp4",
+      poster: "/showcase/vfx-desktop.jpg",
+    },
+    mobile: { src: "/showcase/vfx-mobile.mp4", poster: "/showcase/vfx-mobile.jpg" },
   },
 ] as const;
 
@@ -78,6 +93,11 @@ export const serviceDetails = {
     description:
       "High-fidelity modeling, texturing, and lighting for products and brands. From hero shots to full CG campaigns, we deliver photoreal visuals built to print, ship, or run on the web.",
     projects: [
+      // Nuevos arriba, más recientes primero (mismo criterio en todos los
+      // servicios). Los viejos quedan debajo en su orden original.
+      { title: "CG Render 09", videoId: "3k9ZZW3Uutg", aspectRatio: "16/9" },
+      { title: "CG Render 10", videoId: "_idp9jLteD8", aspectRatio: "9/16" },
+      { title: "CG Render 11", videoId: "cVB8Ukfw9y0", aspectRatio: "16/9" },
       { title: "Heel — Hero Shot", videoId: "x9A4X5SwHo0", aspectRatio: "16/9" },
       { title: "Product Loop", videoId: "Qusi8VAni6Y", aspectRatio: "1/1" },
       { title: "Materials Study", videoId: "bz8A6TeqZ1U", aspectRatio: "9/16" },
@@ -96,6 +116,10 @@ export const serviceDetails = {
     name: "2D Motion",
     description:
       "Animated storytelling and motion design for brands, products, and digital campaigns. We move type, illustration, and identity systems with intention.",
+    // Video de fondo del hero (full-bleed, loop). Separado del grid a
+    // propósito: NO está en `projects`/`customLayout`, es solo la pieza del
+    // hero. Si un servicio no define `heroVideoId`, el hero usa `projects[0]`.
+    heroVideoId: "avFnQ1Onq1w",
     projects: [
       { title: "Go Power — Ciclon", videoId: "Mnq6Lk7Ol24", aspectRatio: "16/9" },
       { title: "Campaign Loop", videoId: "yHweM-ioqP0", aspectRatio: "1/1" },
@@ -103,11 +127,14 @@ export const serviceDetails = {
       { title: "Animated Spot", videoId: "LiWhk9dCvGQ", aspectRatio: "16/9" },
       { title: "Animated Spot 05", videoId: "svH7YqA80-E", aspectRatio: "1920/916" },
       { title: "Animated Spot 06", videoId: "SEpWPbMajGU", aspectRatio: "16/9" },
+      { title: "Animated Spot 07", videoId: "ODh85aidkLg", aspectRatio: "16/9" },
+      { title: "Animated Spot 08", videoId: "D2IA3asjWPA", aspectRatio: "1/1" },
     ],
     // Layout manual por filas. Cada array interno = una fila. Los items
     // dentro de una fila se reparten el ancho proporcionalmente al aspect
     // ratio del video → todos quedan a la misma altura sin recortes.
     customLayout: [
+      ["ODh85aidkLg", "D2IA3asjWPA"], // nuevos arriba (más recientes): landscape + square
       ["Mnq6Lk7Ol24", "yHweM-ioqP0"], // landscape + square
       ["Vladbv4hErQ", "LiWhk9dCvGQ"], // square + landscape
       ["svH7YqA80-E"], // full width (ultrawide)
@@ -160,3 +187,13 @@ export const marqueeSpecialties = [
  * en el footer. Single source of truth para que cualquier cambio se propague.
  */
 export const CONTACT_EMAIL = "banda.studio.team@gmail.com";
+
+/**
+ * URL canónica del sitio en producción. Base para `metadataBase`, el sitemap,
+ * Open Graph, canonical URLs y JSON-LD. Sin trailing slash.
+ *
+ * Es la versión CON www: `bandastudio.tv` (sin www) hace 307 → `www.`, así que
+ * `www` es la canónica. Ojo: `banda.studio` NO es este sitio (resuelve a un
+ * Squarespace ajeno) — el dominio real es `bandastudio.tv`.
+ */
+export const SITE_URL = "https://www.bandastudio.tv";

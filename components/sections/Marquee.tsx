@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 
 import { marqueeSpecialties } from "@/lib/services";
+import { Reveal } from "@/components/ui/Reveal";
 
 /**
  * Sección "Our services" con marquee.
@@ -26,14 +27,16 @@ export function Marquee() {
       className="overflow-hidden bg-surface-primary py-8"
     >
       <div className="mx-auto flex w-full max-w-[1440px] items-center gap-10 px-6 sm:px-10 lg:px-16">
-        <h2
-          id="marquee-title"
-          className="shrink-0 text-body font-normal leading-[1.15] sm:text-subtitle"
-        >
-          Our
-          <br />
-          services
-        </h2>
+        <Reveal as="h2" className="shrink-0">
+          <span
+            id="marquee-title"
+            className="text-body font-normal leading-[1.15] sm:text-subtitle"
+          >
+            Our
+            <br />
+            services
+          </span>
+        </Reveal>
 
         <div className="relative flex-1 overflow-hidden">
           {/* Edge fades para que los chips parezcan disolverse en los bordes. */}
@@ -57,19 +60,28 @@ export function Marquee() {
             className="flex w-max items-center gap-6 animate-marquee [&:hover]:[animation-play-state:paused]"
           >
             {[...marqueeSpecialties, ...marqueeSpecialties].map(
-              (specialty, i) => (
-                <Fragment key={i}>
-                  <li className="rounded-tag bg-[#f7f7f7]/[0.73] px-3 py-1 text-caption font-medium whitespace-nowrap text-ink-on-chip sm:px-5 sm:py-1.5 sm:text-body-lg">
-                    {specialty}
-                  </li>
-                  {/* Separador: punto chico entre items. aria-hidden porque
-                      es decoración pura — los items son la información. */}
-                  <li
-                    aria-hidden="true"
-                    className="size-2 shrink-0 rounded-pill bg-white/40"
-                  />
-                </Fragment>
-              ),
+              (specialty, i) => {
+                // El track duplica la lista para el loop seamless. El segundo
+                // set es solo visual: se oculta al screen reader con
+                // aria-hidden para que no lea las specialties dos veces.
+                const isDuplicate = i >= marqueeSpecialties.length;
+                return (
+                  <Fragment key={i}>
+                    <li
+                      aria-hidden={isDuplicate ? "true" : undefined}
+                      className="rounded-tag bg-[#f7f7f7]/[0.73] px-3 py-1 text-caption font-medium whitespace-nowrap text-ink-on-chip sm:px-5 sm:py-1.5 sm:text-body-lg"
+                    >
+                      {specialty}
+                    </li>
+                    {/* Separador: punto chico entre items. aria-hidden porque
+                        es decoración pura — los items son la información. */}
+                    <li
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-pill bg-white/40"
+                    />
+                  </Fragment>
+                );
+              },
             )}
           </ul>
         </div>

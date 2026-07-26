@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -36,6 +36,20 @@ gsap.registerPlugin(ScrollTrigger);
 export function ServicesShowcase() {
   const root = useRef<HTMLElement>(null);
 
+  // Elegimos la fuente de video según viewport (lg = 1024px): desktop 16:9
+  // (YouTube o self-hosted), mobile 9:16 (self-hosted). Renderizamos SOLO la
+  // versión activa — así no se baja el video del breakpoint que no se ve.
+  // Arranca en `false` (desktop) para el SSR; se corrige en el mount.
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
@@ -62,14 +76,27 @@ export function ServicesShowcase() {
           });
           gsap.set(items[0], { yPercent: 0, scale: 1, opacity: 1 });
 
-          const HOLD = 0.75; // 75% del slot es "hold"; 25% es transición.
+          // Distribución del scroll en "unidades de timeline" (proporciones;
+          // el largo real lo fija `end` vía SLIDE_VH). LEAD_HOLD es más corto
+          // que HOLD a propósito: la card 1 ya se ve durante el approach al
+          // pin, así que si su hold fuera igual al resto, "del 1 al 2" se
+          // sentiría más largo que las demás transiciones.
+          const TRANS = 0.4; // duración de cada transición entre slides.
+          const HOLD = 1.0; // descanso de cada slide intermedio (centrado).
+          const LEAD_HOLD = 0.6; // descanso del primer slide (corto).
+          const TRAIL_HOLD = 1.0; // descanso del último slide antes de salir.
+
+          // Alto de scroll por slide (1 = 100vh = una pantalla). Subirlo hace
+          // que cada servicio dure más scroll. Bajarlo lo acelera.
+          const SLIDE_VH = 1.5;
 
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: root.current,
               start: "top top",
-              // 100vh por slide. Más espacio = más tiempo de hold visible.
-              end: () => `+=${items.length * window.innerHeight}`,
+              // SLIDE_VH * 100vh por slide. Más espacio = más hold visible.
+              end: () =>
+                `+=${items.length * window.innerHeight * SLIDE_VH}`,
               pin: true,
               scrub: 1,
               anticipatePin: 1,
@@ -77,14 +104,13 @@ export function ServicesShowcase() {
             },
           });
 
-          // Transiciones entre slides consecutivos. Posición en timeline:
-          // slide i empieza a entrar en (i - 0.25), llega a centro en i.
-          // - Saliente: sube (yPercent -100), se achica (scale) y se
-          //   desvanece (opacity 0) → "recede" hacia atrás.
-          // - Entrante: sube a centro (yPercent 0), crece (scale 1) y
-          //   aparece (opacity 1).
+          // Transiciones entre slides, posicionadas de forma acumulativa:
+          // cada slide descansa y luego transiciona al siguiente. El primer
+          // slide arranca tras LEAD_HOLD (corto); los demás tras HOLD.
+          // - Saliente: sube (yPercent -100), se achica y se desvanece.
+          // - Entrante: sube a centro (yPercent 0), crece y aparece.
+          let pos = LEAD_HOLD;
           for (let i = 1; i < items.length; i++) {
-            const transitionStart = i - (1 - HOLD);
             tl.to(
               items[i - 1],
               {
@@ -92,9 +118,9 @@ export function ServicesShowcase() {
                 scale: SCALE_OUT,
                 opacity: 0,
                 ease: "power2.inOut",
-                duration: 1 - HOLD,
+                duration: TRANS,
               },
-              transitionStart,
+              pos,
             ).to(
               items[i],
               {
@@ -102,15 +128,15 @@ export function ServicesShowcase() {
                 scale: 1,
                 opacity: 1,
                 ease: "power2.inOut",
-                duration: 1 - HOLD,
+                duration: TRANS,
               },
-              transitionStart,
+              pos,
             );
+            pos += TRANS + HOLD;
           }
 
-          // Extender la timeline hasta items.length para que la última card
-          // tenga su hold final antes de unpinear.
-          tl.to({}, { duration: HOLD }, items.length - HOLD);
+          // Descanso final del último slide antes de despinear.
+          tl.to({}, { duration: TRAIL_HOLD });
         },
       );
     },
@@ -173,26 +199,33 @@ export function ServicesShowcase() {
                     exterior.
                   */}
                   <div className="px-8 pb-8 lg:px-12 lg:pb-12">
-                    <YouTubeLoopVideo
-                      videoId={service.videoId}
-                      title={`${service.name} — featured work`}
-                      // `cover` + `clip-path:inset(0_round_1rem)` matchea
-                      // rounded-2xl (1rem). El cover escala el iframe 125%
-                      // vertical para que un video 16:9 llene el wrapper
-                      // 2.22:1 sin pillarbox; el clip-path fuerza al
-                      // iframe a respetar los 4 corners redondeados
-                      // (overflow-hidden + rounded solo no alcanza con
+                    {isMobile ? (
+                      // Mobile: recorte vertical 9:16 self-hosted.
+                      <LoopVideo
+                        src={service.mobile.src}
+                        poster={service.mobile.poster}
+                        title={`${service.name} — featured work`}
+                        className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl"
+                      />
+                    ) : service.desktop.kind === "youtube" ? (
+                      // Desktop 3D / 2D: embed de YouTube en 16:9. El
+                      // clip-path fuerza al iframe a respetar los corners
+                      // redondeados (overflow-hidden solo no alcanza con
                       // iframes en Chrome/Safari).
-                      cover
-                      // Sin `max-h-[70vh]`: ese cap distorsiona el aspect
-                      // ratio en viewports bajos (la altura se cappea pero
-                      // el width sigue al 100%, el wrapper queda más ancho
-                      // que 2.22:1) y rompe el cover-fit del iframe. El
-                      // ancho del wrapper ya está capeado por el max-w del
-                      // container, así que la altura natural del aspect
-                      // no se va a desbordar.
-                      className="relative aspect-[1731/781] w-full overflow-hidden rounded-2xl [clip-path:inset(0_round_1rem)]"
-                    />
+                      <YouTubeLoopVideo
+                        videoId={service.desktop.videoId}
+                        title={`${service.name} — featured work`}
+                        className="relative aspect-video w-full overflow-hidden rounded-2xl [clip-path:inset(0_round_1rem)]"
+                      />
+                    ) : (
+                      // Desktop VFX: video self-hosted en 16:9.
+                      <LoopVideo
+                        src={service.desktop.src}
+                        poster={service.desktop.poster}
+                        title={`${service.name} — featured work`}
+                        className="relative aspect-video w-full overflow-hidden rounded-2xl"
+                      />
+                    )}
                   </div>
                 </article>
               ))}
@@ -221,5 +254,59 @@ function ChevronRight() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+/**
+ * Video self-hosted en loop para el showcase. Muteado, y con
+ * IntersectionObserver para reproducir SOLO cuando está en viewport — evita
+ * que en mobile los 3 videos bajen/reproduzcan a la vez. `muted` se setea por
+ * ref (el atributo JSX no siempre lo refleja, y sin muted el autoplay se
+ * bloquea). `preload="none"` → no baja bytes hasta que entra en viewport.
+ */
+function LoopVideo({
+  src,
+  poster,
+  title,
+  className,
+}: {
+  src: string;
+  poster: string;
+  title: string;
+  className?: string;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    const w = wrapRef.current;
+    if (!v || !w) return;
+    v.muted = true;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) void v.play().catch(() => {});
+        else v.pause();
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(w);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <div ref={wrapRef} className={className}>
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        aria-label={title}
+        className="absolute inset-0 h-full w-full object-cover"
+        muted
+        loop
+        playsInline
+        preload="none"
+      />
+    </div>
   );
 }

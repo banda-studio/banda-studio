@@ -18,6 +18,10 @@ export function ContactForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", message: "" });
+  // Honeypot anti-spam: campo oculto que un humano nunca ve ni completa. Los
+  // bots suelen autocompletar todos los inputs, así que si esto viene con
+  // valor, el server lo descarta. Cero fricción para usuarios reales.
+  const [honeypot, setHoneypot] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,7 +32,7 @@ export function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, company: honeypot }),
       });
 
       if (!res.ok) {
@@ -78,6 +82,27 @@ export function ContactForm() {
         disabled={disabled}
         required
       />
+
+      {/*
+        Honeypot: oculto fuera de pantalla (no `display:none`, que algunos bots
+        saltean). aria-hidden + tabIndex=-1 + autoComplete=off para que ningún
+        usuario real ni lector de pantalla lo toque.
+      */}
+      <div
+        aria-hidden="true"
+        className="absolute left-[-9999px] h-0 w-0 overflow-hidden"
+      >
+        <label htmlFor="field-company">Company</label>
+        <input
+          id="field-company"
+          type="text"
+          name="company"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+        />
+      </div>
 
       <div className="mt-2 flex flex-col items-start gap-4">
         <button

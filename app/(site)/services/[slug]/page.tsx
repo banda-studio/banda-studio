@@ -36,6 +36,11 @@ export default async function ServicePage({
   // (ver comentario allá). Ya no scrapeamos YouTube en runtime.
   const projects = service.projects;
 
+  // Video del hero: si el servicio define `heroVideoId` (pieza dedicada,
+  // separada del grid) se usa esa; si no, cae al primer proyecto.
+  const heroVideoId =
+    "heroVideoId" in service ? service.heroVideoId : service.projects[0].videoId;
+
   // Si el servicio define un `customLayout`, lo resolvemos a `rows` con los
   // proyectos completos (con aspect detectado). Si no, el grid auto-
   // distribuye en columnas según aspect ratio.
@@ -57,9 +62,9 @@ export default async function ServicePage({
         <ServicePageHero
           name={service.name}
           description={service.description}
-          // Primer proyecto = hero piece. Mismo que se ve en el showcase de
-          // la home, ahora a full pantalla loopeando en HD.
-          heroVideoId={service.projects[0].videoId}
+          // `heroVideoId` dedicado si existe (ej: 2D Motion); si no, el primer
+          // proyecto — mismo que se ve en el showcase de la home.
+          heroVideoId={heroVideoId}
         />
         <ServiceProjectGrid projects={projects} rows={rows} />
         <ContactCTA />
@@ -82,7 +87,9 @@ export async function generateMetadata({
   if (!service) return {};
 
   return {
-    title: `${service.name} — Banda Studio`,
+    // Solo el nombre: el template del root layout agrega "— Banda Studio".
+    title: service.name,
     description: service.description,
+    alternates: { canonical: `/services/${slug}` },
   };
 }

@@ -23,8 +23,12 @@
      "cuadrado con bordes redondeados". Min 0.5rem para que no desaparezca
      en textos chiquitos. */
   --radius-tag: clamp(0.5rem, 0.75em, 1rem);
-  /* Sección grande con fondo: 70px fijo, solo para bloques con bg-surface-secondary. */
-  --radius-section: 70px;
+  /* Sección grande con fondo (bloques con bg-surface-secondary). Responsive:
+     70px en desktop (≥~1000px, donde fue diseñado) y se achica en mobile, donde
+     70px queda desproporcionado respecto al ancho de pantalla. 7vw llega a 70
+     cerca del breakpoint lg (1024px); el clamp lo capea ahí y baja hasta 2rem
+     (32px) en pantallas chicas. */
+  --radius-section: clamp(2rem, 7vw, 70px);
 
   /* === Font sizes (with paired line-heights) === */
   --text-hero: clamp(3rem, 6vw + 1rem, 5.5rem);

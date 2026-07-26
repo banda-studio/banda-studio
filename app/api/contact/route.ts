@@ -19,11 +19,23 @@ import { CONTACT_EMAIL } from "@/lib/services";
  * algo como `Banda Studio <hello@banda.studio>`.
  */
 export async function POST(request: Request) {
-  let body: { name?: string; email?: string; message?: string };
+  let body: {
+    name?: string;
+    email?: string;
+    message?: string;
+    company?: string;
+  };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  // Honeypot: si el campo oculto `company` vino completo, es un bot. Devolvemos
+  // 200 OK fingido (sin enviar nada) para que el bot crea que tuvo éxito y no
+  // reintente ni cambie de táctica.
+  if (body.company && body.company.trim() !== "") {
+    return NextResponse.json({ ok: true });
   }
 
   const name = body.name?.trim();
