@@ -1,0 +1,13 @@
+# Archivos que Vercel NO necesita para buildear ni servir el sitio.
+# Quedan versionados en GitHub como fuente/backup, pero se excluyen del deploy.
+# IMPORTANTE: solo listar cosas 100% irrelevantes al build. NO agregar acá
+# código (app/, components/, lib/, sanity/), config (next.config.ts, tsconfig,
+# package.json, postcss) ni assets servidos (public/) — el build los necesita.
+
+# Contexto/config de Claude Code y agents (no afecta el build).
+.claude
+AGENTS.md
+
+# Documentación del proyecto.
+CLAUDE.md
+README.md
