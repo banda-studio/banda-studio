@@ -13,10 +13,10 @@ import { CONTACT_EMAIL } from "@/lib/services";
  * **Env vars requeridas:**
  * - `RESEND_API_KEY` — API key de https://resend.com (free tier: 3K/mes).
  *
- * **From address:** mientras el dominio no esté verificado en Resend, va
- * el `onboarding@resend.dev` (sandbox de Resend, válido pero menos pro).
- * Cuando se verifique `banda.studio` (DNS records en Namecheap), cambiar a
- * algo como `Banda Studio <hello@banda.studio>`.
+ * **From address:** `hello@bandastudio.tv`. El dominio está verificado en
+ * Resend (DKIM/SPF/DMARC cargados en el DNS de Namecheap). El local-part
+ * `hello@` no necesita buzón real — Resend solo exige que el DOMINIO esté
+ * verificado para enviar; las respuestas van al `replyTo` (email del visitante).
  */
 export async function POST(request: Request) {
   let body: {
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
   try {
     const { error } = await resend.emails.send({
-      from: "Banda Studio <onboarding@resend.dev>",
+      from: "Banda Studio <hello@bandastudio.tv>",
       to: CONTACT_EMAIL,
       replyTo: email,
       subject: `New inquiry from ${name}`,
