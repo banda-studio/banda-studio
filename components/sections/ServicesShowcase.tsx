@@ -183,6 +183,10 @@ export function ServicesShowcase() {
                       </p>
                       <Link
                         href={`/services/${service.slug}`}
+                        // Los 3 "More Works" tienen el mismo texto visible pero
+                        // van a servicios distintos: el aria-label los distingue
+                        // para lectores de pantalla.
+                        aria-label={`More Works — ${service.name}`}
                         className="inline-flex items-center gap-1 text-caption font-medium text-accent transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none"
                       >
                         More Works

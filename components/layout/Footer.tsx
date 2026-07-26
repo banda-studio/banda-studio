@@ -11,7 +11,7 @@ export function Footer() {
 
   return (
     <footer className="bg-surface-secondary px-6 pb-10 text-center sm:px-10 lg:px-16">
-      <p className="text-caption text-white/35">
+      <p className="text-caption text-white/50">
         Made by Banda Studio · {year}
       </p>
     </footer>
