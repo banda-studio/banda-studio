@@ -41,11 +41,16 @@ export function ServicesShowcase() {
   // versión activa — así no se baja el video del breakpoint que no se ve.
   // Arranca en `false` (desktop) para el SSR; se corrige en el mount.
   const [isMobile, setIsMobile] = useState(false);
+  // `mounted` gatea el render del media: en el SSR NO se rendea ninguna fuente
+  // (solo el wrapper con aspect por CSS reserva el espacio → sin CLS). Así en
+  // mobile no se baja el thumbnail de YouTube del modo desktop del SSR.
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
     const update = () => setIsMobile(mq.matches);
     update();
+    setMounted(true);
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
@@ -203,33 +208,42 @@ export function ServicesShowcase() {
                     exterior.
                   */}
                   <div className="px-8 pb-8 lg:px-12 lg:pb-12">
-                    {isMobile ? (
-                      // Mobile: recorte vertical 9:16 self-hosted.
-                      <LoopVideo
-                        src={service.mobile.src}
-                        poster={service.mobile.poster}
-                        title={`${service.name} — featured work`}
-                        className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl"
-                      />
-                    ) : service.desktop.kind === "youtube" ? (
-                      // Desktop 3D / 2D: embed de YouTube en 16:9. El
-                      // clip-path fuerza al iframe a respetar los corners
-                      // redondeados (overflow-hidden solo no alcanza con
-                      // iframes en Chrome/Safari).
-                      <YouTubeLoopVideo
-                        videoId={service.desktop.videoId}
-                        title={`${service.name} — featured work`}
-                        className="relative aspect-video w-full overflow-hidden rounded-2xl [clip-path:inset(0_round_1rem)]"
-                      />
-                    ) : (
-                      // Desktop VFX: video self-hosted en 16:9.
-                      <LoopVideo
-                        src={service.desktop.src}
-                        poster={service.desktop.poster}
-                        title={`${service.name} — featured work`}
-                        className="relative aspect-video w-full overflow-hidden rounded-2xl"
-                      />
-                    )}
+                    {/*
+                      Wrapper con aspect RESPONSIVE por CSS (9:16 mobile / 16:9
+                      desktop). Reserva el espacio desde el SSR → sin CLS y sin
+                      depender de JS. El media se monta adentro (absolute
+                      inset-0) recién en cliente, así en mobile no se baja el
+                      thumbnail de YouTube del modo desktop.
+                    */}
+                    <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl lg:aspect-video">
+                      {mounted &&
+                        (isMobile ? (
+                          // Mobile: recorte vertical 9:16 self-hosted.
+                          <LoopVideo
+                            src={service.mobile.src}
+                            poster={service.mobile.poster}
+                            title={`${service.name} — featured work`}
+                            className="absolute inset-0"
+                          />
+                        ) : service.desktop.kind === "youtube" ? (
+                          // Desktop 3D / 2D: embed de YouTube 16:9. El clip-path
+                          // fuerza al iframe a respetar los corners redondeados
+                          // (overflow-hidden solo no alcanza con iframes).
+                          <YouTubeLoopVideo
+                            videoId={service.desktop.videoId}
+                            title={`${service.name} — featured work`}
+                            className="absolute inset-0 [clip-path:inset(0_round_1rem)]"
+                          />
+                        ) : (
+                          // Desktop VFX: video self-hosted 16:9.
+                          <LoopVideo
+                            src={service.desktop.src}
+                            poster={service.desktop.poster}
+                            title={`${service.name} — featured work`}
+                            className="absolute inset-0"
+                          />
+                        ))}
+                    </div>
                   </div>
                 </article>
               ))}
