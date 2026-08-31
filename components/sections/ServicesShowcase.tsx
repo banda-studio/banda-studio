@@ -2,48 +2,30 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
 
 import { showcaseServices } from "@/lib/services";
 import { YouTubeLoopVideo } from "@/components/ui/YouTubeLoopVideo";
 
-gsap.registerPlugin(ScrollTrigger);
-
 /**
- * Sección "Services" estilo Lusion (lite).
+ * Sección "Featured services": los 3 servicios destacados (3D, 2D Motion, VFX)
+ * apilados uno debajo del otro con **scroll normal**. Cada uno: header (título
+ * + divider + descripción + "More Works") y un video full-width.
  *
- * Layout: tarjeta negra (rounded-section) con título + descripción arriba y
- * video full-width abajo. En desktop, al llegar a la sección el contenido
- * queda pinneado y mientras scrolleás los servicios entran por abajo / salen
- * por arriba — sin fade, sin solapamiento (al cruzarse las dos cards ocupan
- * mitades distintas del slot).
+ * Antes era un scroll-pin estilo Lusion (GSAP ScrollTrigger con crossfade);
+ * se simplificó a un stack normal a pedido del diseño (frame Figma "1920w
+ * dark"). Ya no usa GSAP.
  *
- * Timing por slide:
- * - 100vh por slide (3 slides → 300vh de scroll total).
- * - 75vh de "hold" (card centrada, video reproduciéndose) + 25vh de transición.
- *
- * Implementación:
- * - Grid 1×1 con todos los slides apilados ([grid-area:1/1]) — el container
- *   se dimensiona al slide más alto y los slides comparten posición exacta.
- * - GSAP timeline con scrub. Cards 2..N inician en yPercent: 100 (off-screen
- *   abajo). Cada transición traduce simultáneamente -100 la saliente y 0 la
- *   entrante.
- * - `gsap.matchMedia` solo monta el efecto en (lg:+) sin prefers-reduced-motion.
- *   En cualquier otro caso, Tailwind cae a una lista vertical normal.
+ * Video **responsive** (misma estrategia que el hero): 16:9 en desktop, 9:16
+ * en mobile. Se renderiza SOLO la versión del viewport activo, y recién en
+ * cliente (`mounted`), así en mobile no se baja el thumbnail de YouTube del
+ * modo desktop. Client Component por el matchMedia + control de los <video>.
  */
 export function ServicesShowcase() {
-  const root = useRef<HTMLElement>(null);
-
-  // Elegimos la fuente de video según viewport (lg = 1024px): desktop 16:9
-  // (YouTube o self-hosted), mobile 9:16 (self-hosted). Renderizamos SOLO la
-  // versión activa — así no se baja el video del breakpoint que no se ve.
-  // Arranca en `false` (desktop) para el SSR; se corrige en el mount.
+  // Fuente de video según viewport (lg = 1024px): desktop 16:9 (YouTube o
+  // self-hosted), mobile 9:16 (self-hosted). `mounted` gatea el render para
+  // que el SSR no emita ninguna fuente (el wrapper con aspect por CSS reserva
+  // el espacio → sin CLS).
   const [isMobile, setIsMobile] = useState(false);
-  // `mounted` gatea el render del media: en el SSR NO se rendea ninguna fuente
-  // (solo el wrapper con aspect por CSS reserva el espacio → sin CLS). Así en
-  // mobile no se baja el thumbnail de YouTube del modo desktop del SSR.
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -55,199 +37,79 @@ export function ServicesShowcase() {
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-
-      mm.add(
-        "(min-width: 1024px) and (prefers-reduced-motion: no-preference)",
-        () => {
-          const items = gsap.utils.toArray<HTMLElement>(
-            "[data-showcase-item]",
-            root.current,
-          );
-          if (items.length < 2) return;
-
-          // Estado inicial: la primera card centrada y full; el resto
-          // abajo (yPercent 100), un poco más chicas (scale 0.92) y
-          // transparentes (opacity 0). El scale + opacity dan la sensación
-          // de profundidad/capas en la transición.
-          const SCALE_OUT = 0.92;
-          gsap.set(items, {
-            yPercent: 100,
-            scale: SCALE_OUT,
-            opacity: 0,
-            transformOrigin: "50% 50%",
-          });
-          gsap.set(items[0], { yPercent: 0, scale: 1, opacity: 1 });
-
-          // Distribución del scroll en "unidades de timeline" (proporciones;
-          // el largo real lo fija `end` vía SLIDE_VH). LEAD_HOLD es más corto
-          // que HOLD a propósito: la card 1 ya se ve durante el approach al
-          // pin, así que si su hold fuera igual al resto, "del 1 al 2" se
-          // sentiría más largo que las demás transiciones.
-          const TRANS = 0.4; // duración de cada transición entre slides.
-          const HOLD = 1.0; // descanso de cada slide intermedio (centrado).
-          const LEAD_HOLD = 0.6; // descanso del primer slide (corto).
-          const TRAIL_HOLD = 1.0; // descanso del último slide antes de salir.
-
-          // Alto de scroll por slide (1 = 100vh = una pantalla). Subirlo hace
-          // que cada servicio dure más scroll. Bajarlo lo acelera.
-          const SLIDE_VH = 1.5;
-
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: root.current,
-              start: "top top",
-              // SLIDE_VH * 100vh por slide. Más espacio = más hold visible.
-              end: () =>
-                `+=${items.length * window.innerHeight * SLIDE_VH}`,
-              pin: true,
-              scrub: 1,
-              anticipatePin: 1,
-              invalidateOnRefresh: true,
-            },
-          });
-
-          // Transiciones entre slides, posicionadas de forma acumulativa:
-          // cada slide descansa y luego transiciona al siguiente. El primer
-          // slide arranca tras LEAD_HOLD (corto); los demás tras HOLD.
-          // - Saliente: sube (yPercent -100), se achica y se desvanece.
-          // - Entrante: sube a centro (yPercent 0), crece y aparece.
-          let pos = LEAD_HOLD;
-          for (let i = 1; i < items.length; i++) {
-            tl.to(
-              items[i - 1],
-              {
-                yPercent: -100,
-                scale: SCALE_OUT,
-                opacity: 0,
-                ease: "power2.inOut",
-                duration: TRANS,
-              },
-              pos,
-            ).to(
-              items[i],
-              {
-                yPercent: 0,
-                scale: 1,
-                opacity: 1,
-                ease: "power2.inOut",
-                duration: TRANS,
-              },
-              pos,
-            );
-            pos += TRANS + HOLD;
-          }
-
-          // Descanso final del último slide antes de despinear.
-          tl.to({}, { duration: TRAIL_HOLD });
-        },
-      );
-    },
-    { scope: root },
-  );
-
   return (
     <section
-      ref={root}
       aria-label="Featured services"
-      className="flex min-h-screen items-center bg-surface-primary py-8 lg:py-10"
+      // Sin padding-top: el espacio arriba de la card lo da el pb de la
+      // sección de logos. Si sumáramos ambos, los logos quedarían con más
+      // aire abajo que arriba (arriba solo aporta el pt de su sección).
+      className="bg-surface-primary pb-8 lg:pb-10"
     >
-      {/*
-        Card negra FULL-WIDTH (w-full = 100vw, punta a punta). El contenido
-        (los 3 servicios) va centrado en el max-w-[1440px] de adentro.
-
-        overflow-hidden CRÍTICO: clipea las cards off-screen al borde de
-        ESTA card (altura del contenido), no a 100vh. Con la card centrada
-        en la section (min-h-screen), trasladar una slide `yPercent: 100`
-        la saca exactamente un alto-de-card → 100% afuera y clippeada, sin
-        asomar por abajo en pantallas altas.
-      */}
+      {/* Card negra full-width (rounded-section). El contenido va centrado en
+          el max-w-[1440px] de adentro. */}
       <div className="w-full overflow-hidden rounded-section bg-surface-secondary">
-        <div className="mx-auto w-full max-w-[1440px] px-6 sm:px-10 lg:px-16">
-          <div className="relative flex flex-col gap-12 motion-safe:lg:grid">
-            {showcaseServices.map((service) => (
-                <article
-                  key={service.slug}
-                  data-showcase-item
-                  className="flex flex-col gap-6 motion-safe:lg:[grid-area:1/1] motion-safe:lg:will-change-transform"
-                >
-                  {/* Header: title | description + More Works */}
-                  <header className="flex flex-wrap items-center gap-6 px-8 pt-8 lg:gap-10 lg:px-12 lg:pt-10">
-                    <h2 className="text-tagline font-semibold whitespace-nowrap">
-                      {service.name}
-                    </h2>
-                    <div
-                      aria-hidden="true"
-                      className="hidden h-12 w-px shrink-0 bg-white/20 lg:block"
-                    />
-                    <div className="flex max-w-xl flex-col items-start gap-1">
-                      <p className="text-body text-white/80">
-                        {service.description}
-                      </p>
-                      <Link
-                        href={`/services/${service.slug}`}
-                        // Los 3 "More Works" tienen el mismo texto visible pero
-                        // van a servicios distintos: el aria-label los distingue
-                        // para lectores de pantalla.
-                        aria-label={`More Works — ${service.name}`}
-                        className="inline-flex items-center gap-1 text-caption font-medium text-accent transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none"
-                      >
-                        More Works
-                        <ChevronRight />
-                      </Link>
-                    </div>
-                  </header>
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-16 px-6 py-10 sm:px-10 lg:gap-24 lg:px-16 lg:py-14">
+          {showcaseServices.map((service) => (
+            <article key={service.slug} className="flex flex-col gap-6">
+              {/* Header: título | divider | descripción + More Works */}
+              <header className="flex flex-wrap items-center gap-6 lg:gap-10">
+                <h2 className="text-tagline font-semibold whitespace-nowrap">
+                  {service.name}
+                </h2>
+                <div
+                  aria-hidden="true"
+                  className="hidden h-12 w-px shrink-0 bg-white/20 lg:block"
+                />
+                <div className="flex max-w-xl flex-col items-start gap-1">
+                  <p className="text-body text-white/80">
+                    {service.description}
+                  </p>
+                  <Link
+                    href={`/services/${service.slug}`}
+                    // Los 3 "More Works" comparten texto pero van a servicios
+                    // distintos: el aria-label los distingue.
+                    aria-label={`More Works — ${service.name}`}
+                    className="inline-flex items-center gap-1 text-caption font-medium text-accent transition-opacity hover:opacity-80 focus-visible:opacity-80 focus-visible:outline-none"
+                  >
+                    More Works
+                    <ChevronRight />
+                  </Link>
+                </div>
+              </header>
 
-                  {/*
-                    Video container. Pegado al borde IZQUIERDO de la tarjeta
-                    (sin padding-left) y con padding a la derecha + abajo.
-                    El video tiene rounded solo en las esquinas derechas — las
-                    izquierdas hacen match con la curvatura del contenedor
-                    exterior.
-                  */}
-                  <div className="px-8 pb-8 lg:px-12 lg:pb-12">
-                    {/*
-                      Wrapper con aspect RESPONSIVE por CSS (9:16 mobile / 16:9
-                      desktop). Reserva el espacio desde el SSR → sin CLS y sin
-                      depender de JS. El media se monta adentro (absolute
-                      inset-0) recién en cliente, así en mobile no se baja el
-                      thumbnail de YouTube del modo desktop.
-                    */}
-                    <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl lg:aspect-video">
-                      {mounted &&
-                        (isMobile ? (
-                          // Mobile: recorte vertical 9:16 self-hosted.
-                          <LoopVideo
-                            src={service.mobile.src}
-                            poster={service.mobile.poster}
-                            title={`${service.name} — featured work`}
-                            className="absolute inset-0"
-                          />
-                        ) : service.desktop.kind === "youtube" ? (
-                          // Desktop 3D / 2D: embed de YouTube 16:9. El clip-path
-                          // fuerza al iframe a respetar los corners redondeados
-                          // (overflow-hidden solo no alcanza con iframes).
-                          <YouTubeLoopVideo
-                            videoId={service.desktop.videoId}
-                            title={`${service.name} — featured work`}
-                            className="absolute inset-0 [clip-path:inset(0_round_1rem)]"
-                          />
-                        ) : (
-                          // Desktop VFX: video self-hosted 16:9.
-                          <LoopVideo
-                            src={service.desktop.src}
-                            poster={service.desktop.poster}
-                            title={`${service.name} — featured work`}
-                            className="absolute inset-0"
-                          />
-                        ))}
-                    </div>
-                  </div>
-                </article>
-              ))}
-          </div>
+              {/* Video. Wrapper con aspect responsive por CSS (9:16 mobile /
+                  16:9 desktop): reserva el espacio desde el SSR → sin CLS. El
+                  media se monta adentro (absolute inset-0) recién en cliente. */}
+              <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl lg:aspect-video">
+                {mounted &&
+                  (isMobile ? (
+                    // Mobile: recorte vertical 9:16 self-hosted.
+                    <LoopVideo
+                      src={service.mobile.src}
+                      poster={service.mobile.poster}
+                      title={`${service.name} — featured work`}
+                      className="absolute inset-0"
+                    />
+                  ) : service.desktop.kind === "youtube" ? (
+                    // Desktop 3D / 2D: embed de YouTube 16:9. El clip-path
+                    // fuerza al iframe a respetar los corners redondeados.
+                    <YouTubeLoopVideo
+                      videoId={service.desktop.videoId}
+                      title={`${service.name} — featured work`}
+                      className="absolute inset-0 [clip-path:inset(0_round_1rem)]"
+                    />
+                  ) : (
+                    // Desktop VFX: video self-hosted 16:9.
+                    <LoopVideo
+                      src={service.desktop.src}
+                      poster={service.desktop.poster}
+                      title={`${service.name} — featured work`}
+                      className="absolute inset-0"
+                    />
+                  ))}
+              </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -276,11 +138,10 @@ function ChevronRight() {
 }
 
 /**
- * Video self-hosted en loop para el showcase. Muteado, y con
- * IntersectionObserver para reproducir SOLO cuando está en viewport — evita
- * que en mobile los 3 videos bajen/reproduzcan a la vez. `muted` se setea por
- * ref (el atributo JSX no siempre lo refleja, y sin muted el autoplay se
- * bloquea). `preload="none"` → no baja bytes hasta que entra en viewport.
+ * Video self-hosted en loop. Muteado, y con IntersectionObserver para
+ * reproducir SOLO cuando está en viewport — evita que en mobile los 3 videos
+ * bajen/reproduzcan a la vez. `muted` por ref (el atributo JSX no siempre lo
+ * refleja). `preload="none"` → no baja bytes hasta entrar en viewport.
  */
 function LoopVideo({
   src,

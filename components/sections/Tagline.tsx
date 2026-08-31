@@ -11,7 +11,10 @@ export function Tagline() {
   return (
     <section
       aria-label="Studio philosophy"
-      className="bg-surface-primary py-24 lg:py-32"
+      // Padding ajustado para unificar los gaps de esta zona: el marquee
+      // "Our services" queda pegado arriba (~mismo aire que videos↔marquee) y
+      // la frase no deja un hueco enorme antes del ContactCTA.
+      className="bg-surface-primary pt-8 pb-16 lg:pt-10 lg:pb-20"
     >
       <div className="mx-auto flex w-full max-w-[1440px] justify-center px-6 sm:px-10 lg:px-16">
         <Reveal

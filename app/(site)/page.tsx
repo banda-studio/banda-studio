@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Header } from "@/components/layout/Header";
+import { ClientsStrip } from "@/components/sections/ClientsStrip";
 import { ContactCTA } from "@/components/sections/ContactCTA";
 import { Hero } from "@/components/sections/Hero";
 import { Marquee } from "@/components/sections/Marquee";
@@ -29,8 +30,12 @@ export default function HomePage() {
       <Header />
       <main className="flex-1">
         <Hero />
-        <Marquee />
+        {/* Logos de clientes (reusa el ClientsStrip del /about) donde antes
+            estaba el marquee. */}
+        <ClientsStrip className="bg-surface-primary px-6 py-10 sm:px-10 lg:px-16 lg:py-14" />
         <ServicesShowcase />
+        {/* El marquee "Our services" ahora vive arriba de la tagline. */}
+        <Marquee />
         <Tagline />
         <ContactCTA />
       </main>
